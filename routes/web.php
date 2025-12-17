@@ -6,6 +6,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CSLayer1Controller;
 use App\Http\Controllers\CSLayer2Controller;
+use App\Http\Controllers\AuthController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -14,13 +15,13 @@ Route::get('/product/{product}', [HomeController::class, 'showProduct'])->name('
 
 // Authentication
 Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        return view('auth.login');
-    })->name('login');
+    // Login
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     
-    Route::get('/register', function () {
-        return view('auth.register');
-    })->name('register');
+    // Register
+    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 });
 
 // Authenticated routes
