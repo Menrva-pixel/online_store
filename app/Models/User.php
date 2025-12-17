@@ -26,6 +26,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    // Relationships
+    public function carts()
+    {
+        return $this->hasMany(Cart::class);
+    }
+
+    // Role Checks
     public function isAdmin()
     {
         return $this->role === 'admin';
@@ -44,5 +51,18 @@ class User extends Authenticatable
     public function isCustomer()
     {
         return $this->role === 'customer';
+    }
+
+    // Cart related methods
+    public function getCartTotalAttribute()
+    {
+        return $this->carts->sum(function ($cart) {
+            return $cart->product->price * $cart->quantity;
+        });
+    }
+
+    public function getCartItemsCountAttribute()
+    {
+        return $this->carts->count();
     }
 }
