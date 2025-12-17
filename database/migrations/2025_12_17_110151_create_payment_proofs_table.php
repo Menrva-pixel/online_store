@@ -13,11 +13,17 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->string('proof_image');
             $table->string('payment_method');
+            $table->string('bank_name')->nullable();
+            $table->string('account_number')->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->timestamp('verified_at')->nullable();
             $table->foreignId('verified_by')->nullable()->constrained('users');
             $table->timestamps();
+            
+            $table->index('order_id');
+            $table->index('status');
+            $table->index('verified_at');
         });
     }
 

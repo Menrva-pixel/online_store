@@ -5,72 +5,130 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\PaymentProof;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CSLayer1Controller extends Controller
 {
     public function dashboard()
     {
         $pendingPayments = PaymentProof::where('status', 'pending')
-            ->with(['order.user'])
+            ->with('order.user')
             ->latest()
-            ->paginate(10);
-            
-        return view('cs.layer1.dashboard', compact('pendingPayments'));
+            ->take(10)
+            ->get();
+
+        $verifiedCount = PaymentProof::where('status', 'verified')->count();
+        $rejectedCount = PaymentProof::where('status', 'rejected')->count();
+        $pendingCount = PaymentProof::where('status', 'pending')->count();
+
+        return view('cs1.dashboard', compact(
+            'pendingPayments', 
+            'verifiedCount', 
+            'rejectedCount', 
+            'pendingCount'
+        ));
     }
 
-    public function verifyPayment(PaymentProof $paymentProof)
+    public function pendingPayments()
     {
-        DB::transaction(function () use ($paymentProof) {
-            // Update status pembayaran
-            $paymentProof->update([
-                'status' => 'verified',
-                'verified_at' => now(),
-                'verified_by' => auth()->id()
-            ]);
+        $payments = PaymentProof::where('status', 'pending')
+            ->with('order.user')
+            ->latest()
+            ->paginate(20);
 
-            // Update status order menjadi 'paid'
-            $paymentProof->order->update([
-                'status' => 'paid'
-            ]);
+        return view('cs1.payments.pending', compact('payments'));
+    }
 
-            // Mengurangi stok produk sesuai jumlah dalam order
-            foreach ($paymentProof->order->items as $item) {
-                $product = $item->product;
-                $product->decrement('stock', $item->quantity);
-            }
+    public function showPayment(PaymentProof $paymentProof)
+    {
+        $paymentProof->load(['order.user', 'order.items.product']);
+        return view('cs1.payments.show', compact('paymentProof'));
+    }
 
-            // Mengirim email konfirmasi ke customer
-        });
+    public function verifyPayment(Request $request, PaymentProof $paymentProof)
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:500'
+        ]);
 
-        return redirect()->route('cs1.dashboard')
-            ->with('success', 'Payment verified successfully.');
+        $paymentProof->update([
+            'status' => 'verified',
+            'verified_by' => auth()->id(),
+            'verified_at' => now(),
+            'verification_notes' => $request->notes
+        ]);
+
+        // Update order status
+        $paymentProof->order->update([
+            'status' => 'processing'
+        ]);
+
+        return redirect()->route('cs1.payments.pending')
+            ->with('success', 'Pembayaran berhasil diverifikasi.');
     }
 
     public function rejectPayment(Request $request, PaymentProof $paymentProof)
     {
         $request->validate([
-            'rejection_reason' => 'required|string|max:500'
+            'reason' => 'required|string|max:500'
         ]);
 
         $paymentProof->update([
             'status' => 'rejected',
-            'notes' => $request->rejection_reason
+            'verified_by' => auth()->id(),
+            'verified_at' => now(),
+            'verification_notes' => $request->reason
         ]);
 
-        // Mengirim notifikasi penolakan ke customer
+        // Update order status
+        $paymentProof->order->update([
+            'status' => 'waiting_payment'
+        ]);
 
-        return redirect()->route('cs1.dashboard')
-            ->with('success', 'Payment rejected.');
+        return redirect()->route('cs1.payments.pending')
+            ->with('success', 'Pembayaran ditolak.');
     }
 
     public function pendingOrders()
     {
-        $orders = Order::where('status', 'paid')
+        $orders = Order::where('status', 'waiting_payment')
             ->with(['user', 'paymentProof'])
             ->latest()
-            ->paginate(10);
-            
-        return view('cs.layer1.orders', compact('orders'));
+            ->paginate(20);
+
+        return view('cs1.orders.pending', compact('orders'));
+    }
+
+    public function verifiedPayments()
+    {
+        $payments = PaymentProof::where('status', 'verified')
+            ->with(['order.user', 'verifier'])
+            ->latest()
+            ->paginate(20);
+
+        return view('cs1.payments.verified', compact('payments'));
+    }
+
+    public function downloadProof(PaymentProof $paymentProof)
+    {
+        if (!$paymentProof->proof_path || !Storage::disk('public')->exists($paymentProof->proof_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        return Storage::disk('public')->download($paymentProof->proof_path);
+    }
+
+    public function viewProof(PaymentProof $paymentProof)
+    {
+        if (!$paymentProof->proof_path || !Storage::disk('public')->exists($paymentProof->proof_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        $path = Storage::disk('public')->path($paymentProof->proof_path);
+        $mime = mime_content_type($path);
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+        ]);
     }
 }
