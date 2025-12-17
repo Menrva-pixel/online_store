@@ -9,8 +9,8 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            return redirect()->route('home')->with('error', 'Unauthorized access.');
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.');
         }
 
         return $next($request);

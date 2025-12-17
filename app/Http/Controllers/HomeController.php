@@ -24,7 +24,7 @@ class HomeController extends Controller
 
     public function showProduct(Product $product)
     {
-        // chek jika produk ada di dalam keranjang user
+        // Check if product is in user's cart
         $inCart = false;
         $cartQuantity = 0;
         
