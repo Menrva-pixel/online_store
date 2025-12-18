@@ -344,4 +344,50 @@ class CheckoutController extends Controller
 
         return view('orders.customer-index', compact('orders'));
     }
+
+/**
+ * Filter orders by status
+ */
+public function filterOrders(Request $request)
+{
+    $status = $request->query('status');
+    $query = auth()->user()->orders()->with(['items.product', 'paymentProof']);
+    
+    if ($status && $status !== 'all') {
+        $query->where('status', $status);
+    }
+    
+    $orders = $query->latest()->paginate(10);
+    
+    if ($request->ajax()) {
+        return view('orders.partials.orders-list', compact('orders'))->render();
+    }
+    
+    return view('orders.customer-index', compact('orders', 'status'));
+}
+
+/**
+ * Search orders
+ */
+public function searchOrders(Request $request)
+{
+    $search = $request->query('search');
+    $orders = auth()->user()->orders()
+        ->with(['items.product', 'paymentProof'])
+        ->where(function($query) use ($search) {
+            $query->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('recipient_name', 'like', "%{$search}%")
+                  ->orWhereHas('items.product', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+        })
+        ->latest()
+        ->paginate(10);
+    
+    if ($request->ajax()) {
+        return view('orders.partials.orders-list', compact('orders'))->render();
+    }
+    
+    return view('orders.customer-index', compact('orders', 'search'));
+}
 }

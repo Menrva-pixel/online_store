@@ -22,7 +22,7 @@
                 <li>
                     <div class="flex items-center">
                         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                        <a href="{{ route('admin.products') }}" class="ml-1 text-sm text-gray-700 hover:text-blue-600 md:ml-2">Produk</a>
+                        <a href="{{ route('admin.products.index') }}" class="ml-1 text-sm text-gray-700 hover:text-blue-600 md:ml-2">Produk</a>
                     </div>
                 </li>
                 <li aria-current="page">
@@ -142,7 +142,7 @@
 
                     <!-- Form Actions -->
                     <div class="flex justify-between pt-6 border-t border-gray-200">
-                        <a href="{{ route('admin.products') }}" 
+                        <a href="{{ route('admin.products.index') }}" 
                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
                             <i class="fas fa-arrow-left mr-2"></i>Kembali
                         </a>

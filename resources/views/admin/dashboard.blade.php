@@ -60,7 +60,7 @@
                 </div>
             </div>
             <div class="mt-4 text-sm">
-                <a href="{{ route('admin.users') }}" class="text-purple-600 hover:text-purple-800">
+                <a href="{{ route('admin.users.index') }}" class="text-purple-600 hover:text-purple-800">
                     Lihat Semua →
                 </a>
             </div>
@@ -82,7 +82,7 @@
                     <i class="fas fa-file-import mr-2"></i>
                     <span>Import Produk</span>
                 </a>
-                <a href="{{ route('admin.orders') }}" 
+                <a href="{{ route('admin.orders.index') }}" 
                    class="flex items-center text-purple-600 hover:text-purple-800">
                     <i class="fas fa-list mr-2"></i>
                     <span>Lihat Semua Pesanan</span>
@@ -154,7 +154,7 @@
                         @endforeach
                     </div>
                     <div class="mt-4 text-center">
-                        <a href="{{ route('admin.products') }}?stock=low" 
+                        <a href="{{ route('admin.products.index') }}?stock=low" 
                            class="text-blue-600 hover:text-blue-800 text-sm">
                             Lihat Semua →
                         </a>
@@ -177,7 +177,7 @@
                     <h2 class="text-xl font-bold text-gray-800">
                         <i class="fas fa-clock mr-2"></i>Pesanan Terbaru
                     </h2>
-                    <a href="{{ route('admin.orders') }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <a href="{{ route('admin.orders.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">
                         Lihat Semua →
                     </a>
                 </div>
@@ -278,17 +278,17 @@
                 <i class="fas fa-link mr-2"></i>Quick Links
             </h2>
             <div class="grid grid-cols-2 gap-4">
-                <a href="{{ route('admin.products') }}" 
+                <a href="{{ route('admin.products.index') }}" 
                    class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg text-center">
                     <i class="fas fa-box text-blue-600 text-2xl mb-2"></i>
                     <div class="font-medium text-gray-800">Produk</div>
                 </a>
-                <a href="{{ route('admin.orders') }}" 
+                <a href="{{ route('admin.orders.index') }}" 
                    class="bg-green-50 hover:bg-green-100 p-4 rounded-lg text-center">
                     <i class="fas fa-shopping-cart text-green-600 text-2xl mb-2"></i>
                     <div class="font-medium text-gray-800">Pesanan</div>
                 </a>
-                <a href="{{ route('admin.users') }}" 
+                <a href="{{ route('admin.users.index') }}" 
                    class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg text-center">
                     <i class="fas fa-users text-purple-600 text-2xl mb-2"></i>
                     <div class="font-medium text-gray-800">Pengguna</div>

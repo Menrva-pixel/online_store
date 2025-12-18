@@ -58,7 +58,7 @@
 
     <!-- Filters and Search -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <form action="{{ route('admin.users') }}" method="GET" class="space-y-4">
+        <form action="{{ route('admin.users.index') }}" method="GET" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Search -->
                 <div>
@@ -109,7 +109,7 @@
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
                     <i class="fas fa-filter mr-2"></i>Terapkan Filter
                 </button>
-                <a href="{{ route('admin.users') }}" 
+                <a href="{{ route('admin.users.index') }}" 
                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
                     <i class="fas fa-redo mr-2"></i>Reset Filter
                 </a>
@@ -183,7 +183,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <form action="{{ route('admin.users.role', $user) }}" method="POST" class="inline">
+                                    <form action="{{ route('admin.users.role.update', $user) }}" method="POST" class="inline">
                                         @csrf
                                         <select name="role" 
                                                 onchange="this.form.submit()"
@@ -221,18 +221,19 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex space-x-2">
                                         @if($user->id != auth()->id())
-                                            <button type="button"
-                                                    onclick="confirmDelete('{{ $user->id }}', '{{ $user->name }}')"
-                                                    class="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition"
-                                                    title="Hapus Pengguna"
-                                                    {{ $user->role == 'admin' && App\Models\User::where('role', 'admin')->count() == 1 ? 'disabled' : '' }}>
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <!-- Hidden Delete Form -->
                                             <form id="delete-user-{{ $user->id }}" 
-                                                action="{{ route('admin.users') }}" 
-                                                method="GET" class="hidden">
-                                                <input type="hidden" name="delete_user" value="{{ $user->id }}">
+                                                  action="{{ route('admin.users.destroy', $user) }}" 
+                                                  method="POST" 
+                                                  class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button"
+                                                        onclick="confirmDelete('{{ $user->id }}', '{{ $user->name }}')"
+                                                        class="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition"
+                                                        title="Hapus Pengguna"
+                                                        {{ $user->role == 'admin' && App\Models\User::where('role', 'admin')->count() == 1 ? 'disabled' : '' }}>
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </form>
                                         @else
                                             <span class="text-gray-400 p-2" title="Tidak dapat menghapus akun sendiri">
@@ -259,7 +260,7 @@
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak ada pengguna</h3>
                 <p class="text-gray-600 mb-6">Tidak ditemukan pengguna yang sesuai dengan filter.</p>
-                <a href="{{ route('admin.users') }}" 
+                <a href="{{ route('admin.users.index') }}" 
                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center inline-flex">
                     <i class="fas fa-redo mr-2"></i>Tampilkan Semua Pengguna
                 </a>

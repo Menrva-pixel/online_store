@@ -14,7 +14,7 @@
                 <p class="text-gray-600 mt-2">No. Pesanan: <strong>{{ $order->order_number }}</strong></p>
             </div>
             <div class="mt-4 md:mt-0">
-                <a href="{{ route('admin.orders') }}" 
+                <a href="{{ route('admin.orders.index') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
                     <i class="fas fa-arrow-left mr-2"></i>Kembali
                 </a>
@@ -55,7 +55,7 @@
                     </div>
                     
                     <!-- Status Update Form -->
-                    <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="mt-4 md:mt-0">
+                    <form action="{{ route('admin.orders.status.update', $order) }}" method="POST" class="mt-4 md:mt-0">
                         @csrf
                         <div class="flex items-center space-x-2">
                             <select name="status" 
@@ -241,7 +241,7 @@
 
     <!-- Action Buttons -->
     <div class="mt-8 flex justify-between">
-        <a href="{{ route('admin.orders') }}" 
+        <a href="{{ route('admin.orders.index') }}" 
            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
             <i class="fas fa-arrow-left mr-2"></i>Kembali ke Daftar
         </a>
@@ -251,11 +251,10 @@
                 <i class="fas fa-print mr-2"></i>Cetak Invoice
             </button>
             @if(in_array($order->status, ['pending', 'waiting_payment']))
-                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="inline">
+                <form action="{{ route('admin.orders.status.update', $order) }}" method="POST" class="inline">
                     @csrf
+                    <input type="hidden" name="status" value="cancelled">
                     <button type="submit" 
-                            name="status" 
-                            value="cancelled"
                             onclick="return confirm('Batalkan pesanan {{ $order->order_number }}?')"
                             class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center">
                         <i class="fas fa-times mr-2"></i>Batalkan Pesanan

@@ -46,11 +46,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/payment/upload', [CheckoutController::class, 'uploadPayment'])->name('orders.payment.upload');
     
     // Order routes (CUSTOMER)
-    Route::prefix('my')->name('my.')->group(function () {
-        Route::get('/orders', [CheckoutController::class, 'listOrders'])->name('orders.index');
-        Route::get('/orders/{order}', [CheckoutController::class, 'showMyOrder'])->name('orders.show');
-        Route::delete('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
-    });
+   Route::prefix('my')->name('my.')->group(function () {
+    Route::get('/orders', [CheckoutController::class, 'listOrders'])->name('orders.index');
+    Route::get('/orders/filter', [CheckoutController::class, 'filterOrders'])->name('orders.filter');
+    Route::get('/orders/search', [CheckoutController::class, 'searchOrders'])->name('orders.search');
+    Route::get('/orders/{order}', [CheckoutController::class, 'showMyOrder'])->name('orders.show');
+    Route::delete('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
+   });
     
     // ========== ADMIN ROUTES ==========
     Route::prefix('admin')->name('admin.')->middleware(['auth', 'role.admin'])->group(function () {
