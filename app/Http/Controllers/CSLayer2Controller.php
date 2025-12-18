@@ -10,6 +10,7 @@ class CSLayer2Controller extends Controller
 {
     public function dashboard()
     {
+        // PERBAIKAN: Tambah status 'waiting_payment' untuk menunggu pembayaran
         $processingOrders = Order::where('status', 'processing')
             ->with(['user', 'items.product'])
             ->latest()
@@ -23,6 +24,7 @@ class CSLayer2Controller extends Controller
             ->get();
 
         $stats = [
+            'waiting_payment' => Order::where('status', 'waiting_payment')->count(),
             'processing' => Order::where('status', 'processing')->count(),
             'shipped' => Order::where('status', 'shipped')->count(),
             'completed' => Order::where('status', 'completed')->count(),
@@ -34,7 +36,8 @@ class CSLayer2Controller extends Controller
 
     public function orders(Request $request)
     {
-        $query = Order::whereIn('status', ['processing', 'shipped'])
+        // PERBAIKAN: Tambah status 'waiting_payment' untuk CS2 bisa lihat
+        $query = Order::whereIn('status', ['waiting_payment', 'processing', 'shipped'])
             ->with(['user', 'items.product']);
 
         if ($request->has('search')) {
@@ -66,19 +69,20 @@ class CSLayer2Controller extends Controller
 
     public function processOrder(Order $order)
     {
-        if ($order->status !== 'processing') {
+        // status hanya bisa dari waiting_payment ke processing
+        if ($order->status !== 'waiting_payment') {
             return redirect()->back()
-                ->with('error', 'Hanya pesanan dengan status processing yang dapat diproses.');
+                ->with('error', 'Hanya pesanan dengan status "Menunggu Pembayaran" yang dapat diproses.');
         }
 
         $order->update([
-            'status' => 'ready_to_ship',
+            'status' => 'processing',
             'processed_by' => auth()->id(),
             'processed_at' => now(),
         ]);
 
         return redirect()->back()
-            ->with('success', 'Pesanan siap untuk dikirim.');
+            ->with('success', 'Pesanan berhasil diproses.');
     }
 
     public function shipOrder(Request $request, Order $order)
@@ -88,9 +92,10 @@ class CSLayer2Controller extends Controller
             'shipping_courier' => 'required|string|max:50',
         ]);
 
-        if (!in_array($order->status, ['processing', 'ready_to_ship'])) {
+        // Hanya dari processing ke shipped
+        if ($order->status !== 'processing') {
             return redirect()->back()
-                ->with('error', 'Status pesanan tidak valid untuk pengiriman.');
+                ->with('error', 'Hanya pesanan dengan status "Diproses" yang dapat dikirim.');
         }
 
         $order->update([
@@ -127,6 +132,12 @@ class CSLayer2Controller extends Controller
         $request->validate([
             'reason' => 'required|string|max:500'
         ]);
+
+        // Batalkan dari status apa saja kecuali completed/cancelled
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            return redirect()->back()
+                ->with('error', 'Pesanan yang sudah selesai atau dibatalkan tidak dapat dibatalkan lagi.');
+        }
 
         $order->update([
             'status' => 'cancelled',

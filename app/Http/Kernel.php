@@ -45,7 +45,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         
         'role.admin' => \App\Http\Middleware\AdminMiddleware::class,
-        'role.cs1'   => \App\Http\Middleware\CheckCSLayer1::class,
-        'role.cs2'   => \App\Http\Middleware\CheckCSLayer2::class,
+        'role.cs1'   => \App\Http\Middleware\CSLayer1Middleware::class,
+        'role.cs2'   => \App\Http\Middleware\CSLayer2Middleware::class,
     ];
 }

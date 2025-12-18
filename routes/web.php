@@ -77,7 +77,7 @@ Route::middleware('auth')->group(function () {
     });
     
     // ========== CS LAYER 1 ROUTES ==========
-    Route::prefix('cs1')->name('cs1.')->middleware('check.cs1')->group(function () { // TAMBAHKAN MIDDLEWARE DISINI
+    Route::prefix('cs1')->name('cs1.')->middleware('role.cs1')->group(function () { 
         // Dashboard
         Route::get('/dashboard', [CSLayer1Controller::class, 'dashboard'])->name('dashboard');
         
@@ -99,7 +99,7 @@ Route::middleware('auth')->group(function () {
     });
     
     // ========== CS LAYER 2 ROUTES ==========
-    Route::prefix('cs2')->name('cs2.')->middleware('check.cs2')->group(function () { // TAMBAHKAN MIDDLEWARE DISINI
+    Route::prefix('cs2')->name('cs2.')->middleware('role.cs2')->group(function () { 
         // Dashboard
         Route::get('/dashboard', [CSLayer2Controller::class, 'dashboard'])->name('dashboard');
         
@@ -117,7 +117,26 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// ========== TEST ROUTES ==========
-Route::get('/test-simple', function() {
-    return 'Test Simple Route';
-});
+        // Product management
+        Route::get('/products', [AdminController::class, 'products'])->name('products');
+        Route::get('/products/create', [AdminController::class, 'createProduct'])->name('products.create');
+        Route::post('/products', [AdminController::class, 'storeProduct'])->name('products.store');
+        Route::get('/products/{product}/edit', [AdminController::class, 'editProduct'])->name('products.edit');
+        Route::put('/products/{product}', [AdminController::class, 'updateProduct'])->name('products.update');
+        Route::delete('/products/{product}', [AdminController::class, 'deleteProduct'])->name('products.delete');
+        Route::get('/products/import', [AdminController::class, 'showImportForm'])->name('products.import');
+        Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
+
+        // User management
+        Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::post('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
+        Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
+
+        // Order management
+        Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
+        Route::get('/orders/{order}', [AdminController::class, 'showOrder'])->name('orders.show');
+        Route::post('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.status');
+        // ========== TEST ROUTES ==========
+        Route::get('/test-simple', function() {
+            return 'Test Simple Route';
+        });

@@ -53,14 +53,11 @@ class AdminController extends Controller
             return view('admin.dashboard', compact(
                 'stats', 
                 'ordersByStatus'
-                // ✅ PERBAIKAN: Tidak perlu kirim $recentOrders dan $lowStockProducts secara terpisah
-                // karena sudah ada di dalam $stats
             ));
 
         } catch (\Exception $e) {
             \Log::error('Admin dashboard error: ' . $e->getMessage());
             
-            // ✅ PERBAIKAN: Berikan struktur stats yang lengkap saat error
             return view('admin.dashboard', [
                 'stats' => [
                     'total_products' => 0,
@@ -290,4 +287,33 @@ class AdminController extends Controller
         return redirect()->back()
             ->with('success', 'Role pengguna berhasil diperbarui.');
     }
+
+    public function destroyUser(User $user)
+{
+    // Cegah penghapusan akun sendiri
+    if ($user->id === auth()->id()) {
+        return redirect()->back()
+            ->with('error', 'Anda tidak dapat menghapus akun sendiri.');
+    }
+    
+    // Cegah penghapusan admin terakhir
+    if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
+        return redirect()->back()
+            ->with('error', 'Tidak dapat menghapus admin terakhir.');
+    }
+    
+    try {
+        $userName = $user->name;
+        $user->delete();
+        
+        return redirect()->route('admin.users')
+            ->with('success', "Pengguna '{$userName}' berhasil dihapus.");
+            
+    } catch (\Exception $e) {
+        \Log::error('Error deleting user: ' . $e->getMessage());
+        
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan saat menghapus pengguna.');
+    }
+}
 }
