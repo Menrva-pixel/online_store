@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class AddCsColumnsToOrdersTable extends Migration
 {
     public function up()
     {
@@ -25,6 +25,10 @@ return new class extends Migration
             $table->foreignId('cancelled_by')->nullable()->constrained('users');
             $table->timestamp('cancelled_at')->nullable();
             $table->text('cancellation_reason')->nullable();
+            
+            // Kolom untuk payment expiry
+            $table->timestamp('payment_expiry_at')->nullable()->after('status');
+            $table->timestamp('auto_cancelled_at')->nullable()->after('cancelled_at');
         });
     }
 
@@ -40,8 +44,9 @@ return new class extends Migration
                 'processed_by', 'processed_at',
                 'shipped_by', 'shipped_at',
                 'completed_by', 'completed_at',
-                'cancelled_by', 'cancelled_at', 'cancellation_reason'
+                'cancelled_by', 'cancelled_at', 'cancellation_reason',
+                'payment_expiry_at', 'auto_cancelled_at' 
             ]);
         });
     }
-};
+}

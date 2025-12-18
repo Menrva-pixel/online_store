@@ -9,8 +9,8 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule)
     {
-        $schedule->job(new \App\Jobs\CancelUnpaidOrders())
-            ->everyFiveMinutes();
+        $schedule->command('orders:cancel-expired')->everyFiveMinutes();
+        $schedule->command('orders:send-payment-reminder')->hourly();
     }
 
     protected function commands()
@@ -18,4 +18,6 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
         require base_path('routes/console.php');
     }
+
+    
 }

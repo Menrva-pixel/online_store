@@ -33,6 +33,8 @@ class Order extends Model
         'cancelled_by',
         'cancelled_at',
         'cancellation_reason',
+        'payment_expiry_at', 
+        'auto_cancelled_at'
     ];
 
     protected $casts = [
@@ -42,6 +44,9 @@ class Order extends Model
         'shipped_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'payment_expiry_at' => 'datetime',
+        'auto_cancelled_at' => 'datetime',
+
     ];
 
     /**
@@ -139,5 +144,34 @@ class Order extends Model
     public function getFormattedTotalWithShippingAttribute()
     {
         return 'Rp ' . number_format($this->total_with_shipping, 0, ',', '.');
+    }
+
+    public function isPaymentExpired()
+    {
+        return $this->status === 'waiting_payment' 
+            && $this->payment_expiry_at 
+            && now()->greaterThan($this->payment_expiry_at);
+    }
+    public function getPaymentExpiryFormattedAttribute()
+    {
+        return $this->payment_expiry_at 
+            ? Carbon::parse($this->payment_expiry_at)->format('d F Y H:i')
+            : 'Tidak ada batas waktu';
+    }
+
+    public function getRemainingPaymentTimeAttribute()
+    {
+        if (!$this->payment_expiry_at || $this->status !== 'waiting_payment') {
+            return null;
+        }
+        
+        $now = Carbon::now();
+        $expiry = Carbon::parse($this->payment_expiry_at);
+        
+        if ($now->greaterThan($expiry)) {
+            return 'Waktu habis';
+        }
+        
+        return $now->diff($expiry)->format('%h jam %i menit %s detik');
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon; // ← TAMBAHKAN INI
 
 class CheckoutController extends Controller
 {
@@ -107,6 +108,11 @@ class CheckoutController extends Controller
                 'total' => $total,
                 
                 'status' => ($request->payment_method == 'cod') ? 'pending' : 'waiting_payment',
+                
+                // **TAMBAHAN: SET WAKTU EXPIRY 24 JAM**
+                'payment_expiry_at' => ($request->payment_method != 'cod') 
+                    ? Carbon::now()->addHours(24)  // 24 jam untuk non-COD
+                    : null, // COD tidak ada expiry
             ];
             
             // Debug: lihat data sebelum insert
@@ -152,10 +158,20 @@ class CheckoutController extends Controller
             
             DB::commit();
             
+            // Tampilkan waktu expiry ke user
+            $expiryTime = ($request->payment_method != 'cod') 
+                ? Carbon::parse($order->payment_expiry_at)->format('d F Y H:i')
+                : null;
+            
             // Redirect berdasarkan payment method
             if ($request->payment_method != 'cod') {
+                $message = 'Pesanan berhasil dibuat! Silakan upload bukti pembayaran.';
+                if ($expiryTime) {
+                    $message .= " Batas waktu pembayaran: " . $expiryTime;
+                }
+                
                 return redirect()->route('my.orders.show', $order)
-                    ->with('success', 'Pesanan berhasil dibuat! Silakan upload bukti pembayaran.');
+                    ->with('success', $message);
             }
             
             // Jika COD, langsung ke detail order
@@ -355,49 +371,116 @@ class CheckoutController extends Controller
         return view('orders.customer-index', compact('orders'));
     }
 
-/**
- * Filter orders by status
- */
-public function filterOrders(Request $request)
-{
-    $status = $request->query('status');
-    $query = auth()->user()->orders()->with(['items.product', 'paymentProof']);
-    
-    if ($status && $status !== 'all') {
-        $query->where('status', $status);
+    /**
+     * Filter orders by status
+     */
+    public function filterOrders(Request $request)
+    {
+        $status = $request->query('status');
+        $query = auth()->user()->orders()->with(['items.product', 'paymentProof']);
+        
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        
+        $orders = $query->latest()->paginate(10);
+        
+        if ($request->ajax()) {
+            return view('orders.partials.orders-list', compact('orders'))->render();
+        }
+        
+        return view('orders.customer-index', compact('orders', 'status'));
     }
-    
-    $orders = $query->latest()->paginate(10);
-    
-    if ($request->ajax()) {
-        return view('orders.partials.orders-list', compact('orders'))->render();
-    }
-    
-    return view('orders.customer-index', compact('orders', 'status'));
-}
 
-/**
- * Search orders
- */
-public function searchOrders(Request $request)
-{
-    $search = $request->query('search');
-    $orders = auth()->user()->orders()
-        ->with(['items.product', 'paymentProof'])
-        ->where(function($query) use ($search) {
-            $query->where('order_number', 'like', "%{$search}%")
-                  ->orWhere('recipient_name', 'like', "%{$search}%")
-                  ->orWhereHas('items.product', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
-        })
-        ->latest()
-        ->paginate(10);
-    
-    if ($request->ajax()) {
-        return view('orders.partials.orders-list', compact('orders'))->render();
+    /**
+     * Search orders
+     */
+    public function searchOrders(Request $request)
+    {
+        $search = $request->query('search');
+        $orders = auth()->user()->orders()
+            ->with(['items.product', 'paymentProof'])
+            ->where(function($query) use ($search) {
+                $query->where('order_number', 'like', "%{$search}%")
+                    ->orWhere('recipient_name', 'like', "%{$search}%")
+                    ->orWhereHas('items.product', function($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            })
+            ->latest()
+            ->paginate(10);
+        
+        if ($request->ajax()) {
+            return view('orders.partials.orders-list', compact('orders'))->render();
+        }
+        
+        return view('orders.customer-index', compact('orders', 'search'));
     }
-    
-    return view('orders.customer-index', compact('orders', 'search'));
-}
+
+    public static function checkPaymentExpiry(Order $order)
+    {
+        if (!$order->payment_expiry_at || $order->payment_method == 'cod') {
+            return null;
+        }
+        
+        $now = Carbon::now();
+        $expiry = Carbon::parse($order->payment_expiry_at);
+        
+        if ($now->greaterThan($expiry) && $order->status == 'waiting_payment') {
+            return [
+                'expired' => true,
+                'message' => 'Waktu pembayaran telah habis',
+                'remaining' => '00:00:00'
+            ];
+        }
+        
+        return [
+            'expired' => false,
+            'message' => 'Batas waktu pembayaran: ' . $expiry->format('d F Y H:i'),
+            'remaining' => $now->diff($expiry)->format('%H:%I:%S')
+        ];
+    }
+
+    /**
+     * Method untuk pembatalan otomatis (dipanggil dari command)
+     */
+    public static function cancelExpiredOrders()
+    {
+        $expiredOrders = Order::where('status', 'waiting_payment')
+            ->where('payment_expiry_at', '<=', Carbon::now())
+            ->whereNotNull('payment_expiry_at')
+            ->with('items.product')
+            ->get();
+
+        $cancelledCount = 0;
+        
+        foreach ($expiredOrders as $order) {
+            DB::beginTransaction();
+            try {
+                // Kembalikan stok
+                foreach ($order->items as $item) {
+                    if ($item->product) {
+                        $item->product->increment('stock', $item->quantity);
+                    }
+                }
+                
+                // Update status order
+                $order->update([
+                    'status' => 'cancelled',
+                    'auto_cancelled_at' => Carbon::now(),
+                    'cancellation_reason' => 'Pesanan otomatis dibatalkan karena tidak melakukan pembayaran dalam 24 jam'
+                ]);
+                
+                \Log::info("Order {$order->order_number} cancelled automatically due to payment expiry.");
+                $cancelledCount++;
+                
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error("Failed to cancel order {$order->order_number}: {$e->getMessage()}");
+            }
+        }
+        
+        return $cancelledCount;
+    }
 }
