@@ -10,6 +10,7 @@ use App\Models\PaymentProof;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CheckoutController extends Controller
 {
@@ -89,7 +90,7 @@ class CheckoutController extends Controller
                 $total += 5000; 
             }
             
-            // Buat order dengan SEMUA field yang required
+            // PERBAIKAN: Sesuaikan dengan field di model Order
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => 'ORD-' . time() . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
@@ -98,13 +99,9 @@ class CheckoutController extends Controller
                 'shipping_address' => $request->shipping_address,
                 'payment_method' => $request->payment_method,
                 'notes' => $request->notes ?? '',
-                'subtotal' => $subtotal, 
-                'tax' => $tax, 
-                'shipping_cost' => $shipping, 
-                'total' => $total, 
-                'status' => 'waiting_payment',
-                'payment_status' => 'pending',
-                'cancelled_at' => null,
+                'total' => $total, // Hanya total, subtotal/tax/shipping disimpan di field lain jika ada
+                'shipping_cost' => $shipping,
+                'status' => ($request->payment_method == 'cod') ? 'pending' : 'waiting_payment',
             ]);
             
             // Buat order items dengan SEMUA field yang required
@@ -128,8 +125,7 @@ class CheckoutController extends Controller
             // Hapus cart
             Cart::where('user_id', $user->id)->delete();
             
-            // ===== BYPASS UNTUK TESTING =====
-            // Buat payment proof dummy (jika bukan COD)
+            // Buat payment proof dummy HANYA jika bukan COD
             if ($request->payment_method != 'cod') {
                 PaymentProof::create([
                     'order_id' => $order->id,
@@ -144,24 +140,16 @@ class CheckoutController extends Controller
                 ]);
             }
             
-            // Update status order berdasarkan payment method
-            if ($request->payment_method == 'cod') {
-                $order->update([
-                    'status' => 'pending',
-                    'payment_status' => 'pending'
-                ]);
-            } else {
-                // Untuk non-COD, biarkan waiting_payment agar CS1 bisa proses
-                $order->update([
-                    'status' => 'waiting_payment',
-                    'payment_status' => 'waiting_verification'
-                ]);
-            }
-            
             DB::commit();
             
-            // Redirect langsung ke halaman order (bypass upload bukti)
-            return redirect()->route('orders.show', $order)
+            // Redirect berdasarkan payment method
+            if ($request->payment_method != 'cod') {
+                return redirect()->route('my.orders.show', $order)
+                    ->with('success', 'Pesanan berhasil dibuat! Silakan upload bukti pembayaran.');
+            }
+            
+            // Jika COD, langsung ke detail order
+            return redirect()->route('my.orders.show', $order)
                 ->with('success', 'Pesanan berhasil dibuat! No Order: ' . $order->order_number);
                 
         } catch (\Exception $e) {
@@ -176,6 +164,9 @@ class CheckoutController extends Controller
         }
     }
 
+    /**
+     * Show payment upload page for customer
+     */
     public function showPayment(Order $order)
     {
         // cek jika pesanan milik user
@@ -183,18 +174,102 @@ class CheckoutController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Untuk testing, langsung redirect ke order
-        return redirect()->route('orders.show', $order)
-            ->with('info', 'Untuk testing, langsung ke halaman order.');
+        // Cek jika order sudah memiliki payment proof
+        if ($order->paymentProof) {
+            return redirect()->route('my.orders.show', $order)
+                ->with('info', 'Bukti pembayaran sudah diupload.');
+        }
+
+        // Cek jika payment method adalah COD
+        if ($order->payment_method == 'cod') {
+            return redirect()->route('my.orders.show', $order)
+                ->with('info', 'Pesanan COD tidak memerlukan upload bukti pembayaran.');
+        }
+
+        // Cek status order
+        if ($order->status != 'waiting_payment') {
+            return redirect()->route('my.orders.show', $order)
+                ->with('error', 'Pesanan tidak dalam status menunggu pembayaran.');
+        }
+
+        return view('orders.payment-upload', compact('order'));
     }
 
+    /**
+     * Handle payment proof upload
+     */
     public function uploadPayment(Request $request, Order $order)
     {
-        // Untuk testing, langsung redirect ke order
-        return redirect()->route('orders.show', $order)
-            ->with('info', 'Upload pembayaran di-skip untuk testing.');
+        // cek jika pesanan milik user
+        if ($order->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Validasi
+        $request->validate([
+            'proof_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            // Upload image
+            $path = $request->file('proof_image')->store('payment-proofs', 'public');
+            
+            // Update atau create payment proof
+            if ($order->paymentProof) {
+                // Hapus file lama jika ada
+                if ($order->paymentProof->proof_image && Storage::disk('public')->exists($order->paymentProof->proof_image)) {
+                    Storage::disk('public')->delete($order->paymentProof->proof_image);
+                }
+                
+                $order->paymentProof->update([
+                    'proof_image' => $path,
+                    'notes' => $request->notes,
+                    'status' => 'pending',
+                    'verified_at' => null,
+                    'verified_by' => null,
+                ]);
+            } else {
+                PaymentProof::create([
+                    'order_id' => $order->id,
+                    'proof_image' => $path,
+                    'payment_method' => $order->payment_method,
+                    'notes' => $request->notes,
+                    'status' => 'pending',
+                    'verified_at' => null,
+                    'verified_by' => null,
+                ]);
+            }
+            
+            return redirect()->route('my.orders.show', $order)
+                ->with('success', 'Bukti pembayaran berhasil diupload. Menunggu verifikasi dari CS Layer 1.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal mengupload bukti pembayaran: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
+    /**
+     * Show order details for customer (my orders)
+     */
+    public function showMyOrder(Order $order)
+    {
+        // Cek jika pesanan milik user
+        if ($order->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $order->load(['items.product', 'paymentProof']);
+        
+        return view('orders.customer-show', compact('order'));
+    }
+
+    /**
+     * Show order details (for admin/cs - legacy method)
+     * @deprecated - Gunakan controller terpisah untuk admin/cs
+     */
     public function showOrder(Order $order)
     {
         // cek jika pesanan milik user atau diakses oleh CS Layer
@@ -206,6 +281,15 @@ class CheckoutController extends Controller
         }
 
         $order->load(['items.product', 'paymentProof']);
+
+        // Redirect ke route yang sesuai berdasarkan role
+        if ($order->user_id === auth()->id()) {
+            return redirect()->route('my.orders.show', $order);
+        } elseif (auth()->user()->isAdmin()) {
+            return redirect()->route('admin.orders.show', $order);
+        } elseif (auth()->user()->isCSLayer2()) {
+            return redirect()->route('cs2.orders.show', $order);
+        }
 
         return view('orders.show', compact('order'));
     }
@@ -219,7 +303,7 @@ class CheckoutController extends Controller
 
         // cek jika pesanan dapat dibatalkan
         if (!in_array($order->status, ['waiting_payment', 'pending'])) {
-            return redirect()->route('orders.show', $order)
+            return redirect()->route('my.orders.show', $order)
                 ->with('error', 'Pesanan tidak dapat dibatalkan.');
         }
 
@@ -236,17 +320,17 @@ class CheckoutController extends Controller
             $order->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
-                'payment_status' => 'cancelled'
+                'cancelled_by' => auth()->id(),
             ]);
 
             DB::commit();
             
-            return redirect()->route('orders.show', $order)
+            return redirect()->route('my.orders.show', $order)
                 ->with('success', 'Pesanan berhasil dibatalkan.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('orders.show', $order)
+            return redirect()->route('my.orders.show', $order)
                 ->with('error', 'Gagal membatalkan pesanan: ' . $e->getMessage());
         }
     }
@@ -258,6 +342,6 @@ class CheckoutController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('orders.index', compact('orders'));
+        return view('orders.customer-index', compact('orders'));
     }
 }

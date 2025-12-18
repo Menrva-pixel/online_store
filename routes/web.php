@@ -41,39 +41,43 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'showCheckout'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'processCheckout'])->name('checkout.process');
     
-    // Payment routes
-    Route::get('/payment/{order}', [CheckoutController::class, 'showPayment'])->name('payment.show');
-    Route::post('/payment/{order}/upload', [CheckoutController::class, 'uploadPayment'])->name('payment.upload');
+    // Payment routes (CUSTOMER)
+    Route::get('/orders/{order}/payment', [CheckoutController::class, 'showPayment'])->name('orders.payment');
+    Route::post('/orders/{order}/payment/upload', [CheckoutController::class, 'uploadPayment'])->name('orders.payment.upload');
     
-    // Order routes (customer)
-    Route::get('/orders', [CheckoutController::class, 'listOrders'])->name('orders.index');
-    Route::get('/orders/{order}', [CheckoutController::class, 'showOrder'])->name('orders.show');
-    Route::delete('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
+    // Order routes (CUSTOMER)
+    Route::prefix('my')->name('my.')->group(function () {
+        Route::get('/orders', [CheckoutController::class, 'listOrders'])->name('orders.index');
+        Route::get('/orders/{order}', [CheckoutController::class, 'showMyOrder'])->name('orders.show');
+        Route::delete('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
+    });
     
     // ========== ADMIN ROUTES ==========
     Route::prefix('admin')->name('admin.')->middleware(['auth', 'role.admin'])->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         
         // Product management
-        Route::get('/products', [AdminController::class, 'products'])->name('products');
+        Route::get('/products', [AdminController::class, 'products'])->name('products.index');
         Route::get('/products/create', [AdminController::class, 'createProduct'])->name('products.create');
         Route::post('/products', [AdminController::class, 'storeProduct'])->name('products.store');
         Route::get('/products/{product}/edit', [AdminController::class, 'editProduct'])->name('products.edit');
         Route::put('/products/{product}', [AdminController::class, 'updateProduct'])->name('products.update');
         Route::delete('/products/{product}', [AdminController::class, 'deleteProduct'])->name('products.delete');
+        Route::get('/products/{product}/show', [AdminController::class, 'showProduct'])->name('products.show');
         
         // Import products
         Route::get('/products/import', [AdminController::class, 'showImportForm'])->name('products.import');
         Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
         
-        // Order management
-        Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
+        // Order management (ADMIN)
+        Route::get('/orders', [AdminController::class, 'orders'])->name('orders.index');
         Route::get('/orders/{order}', [AdminController::class, 'showOrder'])->name('orders.show');
-        Route::post('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.status');
+        Route::post('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.status.update');
         
         // User management
-        Route::get('/users', [AdminController::class, 'users'])->name('users');
-        Route::post('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
+        Route::get('/users', [AdminController::class, 'users'])->name('users.index');
+        Route::post('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role.update');
+        Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
     });
     
     // ========== CS LAYER 1 ROUTES ==========
@@ -117,27 +121,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-        // Product management
-        Route::get('/products', [AdminController::class, 'products'])->name('products');
-        Route::get('/products/create', [AdminController::class, 'createProduct'])->name('products.create');
-        Route::post('/products', [AdminController::class, 'storeProduct'])->name('products.store');
-        Route::get('/products/{product}/edit', [AdminController::class, 'editProduct'])->name('products.edit');
-        Route::put('/products/{product}', [AdminController::class, 'updateProduct'])->name('products.update');
-        Route::delete('/products/{product}', [AdminController::class, 'deleteProduct'])->name('products.delete');
-        Route::get('/products/import', [AdminController::class, 'showImportForm'])->name('products.import');
-        Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
-        Route::get('/products/{id}', 'ProductController@show')->name('products.show');
-        
-        // User management
-        Route::get('/users', [AdminController::class, 'users'])->name('users');
-        Route::post('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');
-        Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
-
-        // Order management
-        Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
-        Route::get('/orders/{order}', [AdminController::class, 'showOrder'])->name('orders.show');
-        Route::post('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.status');
-        // ========== TEST ROUTES ==========
-        Route::get('/test-simple', function() {
-            return 'Test Simple Route';
-        });
+// ========== TEST ROUTES ==========
+Route::get('/test-simple', function() {
+    return 'Test Simple Route';
+});
