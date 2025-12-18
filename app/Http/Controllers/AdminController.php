@@ -7,8 +7,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ProductsImport;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
@@ -133,7 +132,8 @@ class AdminController extends Controller
 
         Product::create($productData);
 
-        return redirect()->route('admin.products')
+        // ✅ PERBAIKAN: Menggunakan route yang benar dari web.php
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil ditambahkan.');
     }
 
@@ -171,7 +171,8 @@ class AdminController extends Controller
 
         $product->update($productData);
 
-        return redirect()->route('admin.products')
+        // ✅ PERBAIKAN: Menggunakan route yang benar dari web.php
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil diperbarui.');
     }
 
@@ -183,7 +184,8 @@ class AdminController extends Controller
 
         $product->delete();
 
-        return redirect()->route('admin.products')
+        // ✅ PERBAIKAN: Menggunakan route yang benar dari web.php
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil dihapus.');
     }
 
@@ -195,16 +197,193 @@ class AdminController extends Controller
     public function importProducts(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // Max 10MB
+            'skip_header' => 'nullable|boolean',
+            'update_existing' => 'nullable|boolean',
         ]);
 
         try {
-            Excel::import(new ProductsImport, $request->file('file'));
-            return redirect()->route('admin.products')
-                ->with('success', 'Produk berhasil diimport.');
+            $file = $request->file('file');
+            $skipHeader = $request->boolean('skip_header', true);
+            $updateExisting = $request->boolean('update_existing', false);
+            
+            // Deteksi tipe file
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            // Tentukan reader berdasarkan ekstensi
+            if ($extension === 'csv') {
+                $reader = IOFactory::createReader('Csv');
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } elseif ($extension === 'xls') {
+                $reader = IOFactory::createReader('Xls');
+            } else {
+                $reader = IOFactory::createReader('Xlsx');
+            }
+            
+            // Load spreadsheet
+            $spreadsheet = $reader->load($file->getPathname());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+            
+            // Skip header jika diinginkan
+            if ($skipHeader) {
+                array_shift($rows);
+            }
+            
+            $imported = 0;
+            $updated = 0;
+            $errors = [];
+            
+            foreach ($rows as $index => $row) {
+                $rowNumber = $index + ($skipHeader ? 2 : 1); // +2 karena Excel mulai dari 1 dan header
+                
+                // Skip baris kosong
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Mapping kolom - sesuaikan dengan struktur file
+                $data = [
+                    'name' => isset($row[0]) ? trim($row[0]) : '',
+                    'description' => isset($row[1]) ? trim($row[1]) : '',
+                    'price' => isset($row[2]) ? $this->parsePrice($row[2]) : 0,
+                    'stock' => isset($row[3]) ? intval($row[3]) : 0,
+                ];
+                
+                // Validasi data
+                $validator = Validator::make($data, [
+                    'name' => 'required|string|max:255',
+                    'description' => 'nullable|string',
+                    'price' => 'required|numeric|min:0',
+                    'stock' => 'required|integer|min:0',
+                ]);
+                
+                if ($validator->fails()) {
+                    $errors[] = "Baris {$rowNumber}: " . implode(', ', $validator->errors()->all());
+                    continue;
+                }
+                
+                // Cek apakah produk sudah ada
+                $existingProduct = Product::where('name', $data['name'])->first();
+                
+                if ($existingProduct && $updateExisting) {
+                    // Update produk yang sudah ada
+                    $existingProduct->update($data);
+                    $updated++;
+                } elseif (!$existingProduct) {
+                    // Buat produk baru
+                    Product::create($data);
+                    $imported++;
+                }
+                // Jika produk sudah ada tapi tidak diupdate, skip
+            }
+            
+            // Siapkan pesan hasil
+            $message = "Import selesai. ";
+            $message .= "Ditambahkan: {$imported} produk. ";
+            $message .= "Diupdate: {$updated} produk. ";
+            
+            if (!empty($errors)) {
+                $errorCount = count($errors);
+                $message .= "Gagal: {$errorCount} baris. ";
+                
+                // Simpan error ke session untuk ditampilkan
+                session()->flash('import_errors', $errors);
+            }
+            
+            // ✅ PERBAIKAN: Menggunakan route yang benar dari web.php
+            return redirect()->route('admin.products.index')
+                ->with('success', $message);
+                
+        } catch (\Exception $e) {
+            \Log::error('Import error: ' . $e->getMessage());
+            \Log::error('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            
+            return redirect()->back()
+                ->with('error', 'Error importing file: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+    
+    /**
+     * Parse price dari berbagai format
+     */
+    private function parsePrice($value)
+    {
+        if (is_numeric($value)) {
+            return floatval($value);
+        }
+        
+        // Hapus karakter non-numeric kecuali titik dan koma
+        $cleaned = preg_replace('/[^0-9,.]/', '', $value);
+        
+        // Ganti koma dengan titik untuk decimal
+        $cleaned = str_replace(',', '.', $cleaned);
+        
+        // Hapus titik yang berlebihan (misal: 1.000.000 -> 1000000)
+        $lastDot = strrpos($cleaned, '.');
+        if ($lastDot !== false) {
+            $beforeLast = substr($cleaned, 0, $lastDot);
+            $afterLast = substr($cleaned, $lastDot + 1);
+            $beforeLast = str_replace('.', '', $beforeLast);
+            $cleaned = $beforeLast . '.' . $afterLast;
+        }
+        
+        return floatval($cleaned);
+    }
+
+    /**
+     * Download template untuk import
+     */
+    public function downloadTemplate()
+    {
+        try {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            // Header
+            $headers = ['Name', 'Description', 'Price', 'Stock'];
+            $sheet->fromArray($headers, NULL, 'A1');
+            
+            // Contoh data
+            $examples = [
+                ['Laptop Gaming', 'Laptop untuk gaming dengan spesifikasi tinggi', 15000000, 50],
+                ['Mouse Wireless', 'Mouse wireless dengan baterai tahan lama', 250000, 100],
+                ['Keyboard Mechanical', 'Keyboard mechanical dengan switch merah', 800000, 30],
+            ];
+            $sheet->fromArray($examples, NULL, 'A2');
+            
+            // Style header
+            $headerStyle = [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'color' => ['rgb' => 'E8E8E8']
+                ]
+            ];
+            $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+            
+            // Auto size columns
+            foreach (range('A', 'D') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+            
+            // Set response
+            $filename = 'template_import_produk_' . date('Ymd_His') . '.xlsx';
+            
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->save('php://output');
+            exit;
+            
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Error importing file: ' . $e->getMessage());
+                ->with('error', 'Error generating template: ' . $e->getMessage());
         }
     }
 
@@ -289,31 +468,32 @@ class AdminController extends Controller
     }
 
     public function destroyUser(User $user)
-{
-    // Cegah penghapusan akun sendiri
-    if ($user->id === auth()->id()) {
-        return redirect()->back()
-            ->with('error', 'Anda tidak dapat menghapus akun sendiri.');
-    }
-    
-    // Cegah penghapusan admin terakhir
-    if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
-        return redirect()->back()
-            ->with('error', 'Tidak dapat menghapus admin terakhir.');
-    }
-    
-    try {
-        $userName = $user->name;
-        $user->delete();
+    {
+        // Cegah penghapusan akun sendiri
+        if ($user->id === auth()->id()) {
+            return redirect()->back()
+                ->with('error', 'Anda tidak dapat menghapus akun sendiri.');
+        }
         
-        return redirect()->route('admin.users')
-            ->with('success', "Pengguna '{$userName}' berhasil dihapus.");
+        // Cegah penghapusan admin terakhir
+        if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
+            return redirect()->back()
+                ->with('error', 'Tidak dapat menghapus admin terakhir.');
+        }
+        
+        try {
+            $userName = $user->name;
+            $user->delete();
             
-    } catch (\Exception $e) {
-        \Log::error('Error deleting user: ' . $e->getMessage());
-        
-        return redirect()->back()
-            ->with('error', 'Terjadi kesalahan saat menghapus pengguna.');
+            // ✅ PERBAIKAN: Menggunakan route yang benar dari web.php
+            return redirect()->route('admin.users.index')
+                ->with('success', "Pengguna '{$userName}' berhasil dihapus.");
+                
+        } catch (\Exception $e) {
+            \Log::error('Error deleting user: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus pengguna.');
+        }
     }
-}
 }

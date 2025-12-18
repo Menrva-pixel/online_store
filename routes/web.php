@@ -69,7 +69,8 @@ Route::middleware('auth')->group(function () {
         
         // Import products
         Route::get('/products/import', [AdminController::class, 'showImportForm'])->name('products.import');
-        Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
+    Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
+    Route::get('/products/import/template', [AdminController::class, 'downloadTemplate'])->name('products.import.template');
         
         // Order management (ADMIN)
         Route::get('/orders', [AdminController::class, 'orders'])->name('orders.index');

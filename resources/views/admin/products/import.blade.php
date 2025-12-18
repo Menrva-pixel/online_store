@@ -69,6 +69,7 @@
                     </h2>
                 </div>
                 
+                <!-- ✅ PERBAIKAN: Form action mengarah ke route yang benar -->
                 <form action="{{ route('admin.products.import.submit') }}" method="POST" enctype="multipart/form-data" class="p-6">
                     @csrf
                     
@@ -142,6 +143,7 @@
 
                     <!-- Form Actions -->
                     <div class="flex justify-between pt-6 border-t border-gray-200">
+                        <!-- ✅ PERBAIKAN: Link kembali mengarah ke route yang benar -->
                         <a href="{{ route('admin.products.index') }}" 
                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
                             <i class="fas fa-arrow-left mr-2"></i>Kembali
@@ -256,8 +258,8 @@
                             <p class="text-sm text-gray-600 mb-3">
                                 Download template untuk memulai import produk.
                             </p>
-                            <a href="#" 
-                               onclick="downloadTemplate()"
+                            <!-- ✅ PERBAIKAN: Link download template mengarah ke route yang benar -->
+                            <a href="{{ route('admin.products.import.template') }}" 
                                class="inline-flex items-center text-green-600 hover:text-green-800 text-sm">
                                 <i class="fas fa-file-download mr-2"></i>Download Template Excel
                             </a>
@@ -315,9 +317,7 @@ function formatFileSize(bytes) {
 
 // Download Template
 function downloadTemplate() {
-    alert('Fitur download template akan diimplementasikan.');
-    // Implementasi download template Excel
-    // window.location.href = '/admin/products/import/template';
+    window.location.href = '{{ route("admin.products.import.template") }}';
 }
 </script>
 @endsection
