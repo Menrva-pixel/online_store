@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;  
 use App\Models\Cart;
+use App\Models\Product;
 use App\Models\PaymentProof;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
@@ -46,73 +48,131 @@ class CheckoutController extends Controller
         $request->validate([
             'recipient_name' => 'required|string|max:255',
             'recipient_phone' => 'required|string|max:20',
-            'shipping_address' => 'required|string|min:10',
-            'notes' => 'nullable|string|max:500'
+            'shipping_address' => 'required|string',
+            'payment_method' => 'required|in:bank_transfer,cod,ewallet',
+            'notes' => 'nullable|string|max:500',
         ]);
 
-        $cartItems = auth()->user()->carts()->with('product')->get();
-
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('cart.index')
-                ->with('error', 'Keranjang belanja kosong.');
-        }
-
+        $user = Auth::user();
+        
         DB::beginTransaction();
-
+        
         try {
-            // Hitung total
-            $subtotal = $cartItems->sum(function ($item) {
-                return $item->product->price * $item->quantity;
-            });
+            // Ambil item cart
+            $cartItems = Cart::where('user_id', $user->id)
+                ->with('product')
+                ->get();
             
+            if ($cartItems->isEmpty()) {
+                return redirect()->route('cart.index')
+                    ->with('error', 'Keranjang belanja kosong.');
+            }
+            
+            // Hitung total dengan benar sesuai dengan di showCheckout()
+            $subtotal = 0;
+            foreach ($cartItems as $item) {
+                // Cek stok
+                if ($item->product->stock < $item->quantity) {
+                    return redirect()->route('cart.index')
+                        ->with('error', "Stok {$item->product->name} tidak mencukupi.");
+                }
+                $subtotal += $item->product->price * $item->quantity;
+            }
+            
+            // Hitung pajak dan pengiriman
             $tax = $subtotal * 0.1;
             $shipping = 15000;
             $total = $subtotal + $tax + $shipping;
-
-            //  buat pesanan
+            
+            // Tambah biaya COD jika dipilih
+            if ($request->payment_method == 'cod') {
+                $total += 5000; 
+            }
+            
+            // Buat order dengan SEMUA field yang required
             $order = Order::create([
-                'user_id' => auth()->id(),
-                'order_number' => $this->generateOrderNumber(),
-                'total_amount' => $total,
-                'tax_amount' => $tax,
-                'shipping_cost' => $shipping,
-                'status' => 'waiting_payment',
-                'shipping_address' => $request->shipping_address,
+                'user_id' => $user->id,
+                'order_number' => 'ORD-' . time() . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
                 'recipient_name' => $request->recipient_name,
                 'recipient_phone' => $request->recipient_phone,
-                'notes' => $request->notes,
-                'payment_due_at' => now()->addHours(24)
+                'shipping_address' => $request->shipping_address,
+                'payment_method' => $request->payment_method,
+                'notes' => $request->notes ?? '',
+                'subtotal' => $subtotal, 
+                'tax' => $tax, 
+                'shipping_cost' => $shipping, 
+                'total' => $total, 
+                'status' => 'waiting_payment',
+                'payment_status' => 'pending',
+                'cancelled_at' => null,
             ]);
-
-            // buat item pesanan
-            foreach ($cartItems as $cartItem) {
-                $product = $cartItem->product;
+            
+            // Buat order items dengan SEMUA field yang required
+            foreach ($cartItems as $item) {
+                $itemPrice = $item->product->price;
+                $itemQuantity = $item->quantity;
+                $itemSubtotal = $itemPrice * $itemQuantity;
                 
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $product->price,
-                    'subtotal' => $product->price * $cartItem->quantity
+                    'product_id' => $item->product_id,
+                    'quantity' => $itemQuantity,
+                    'price' => $itemPrice,
+                    'subtotal' => $itemSubtotal, 
                 ]);
-
-                // Kurangi stok produk (tapi jangan commit dulu - akan dikonfirmasi setelah verifikasi pembayaran)
-                // Stok akan dikurangi hanya setelah verifikasi pembayaran oleh CS Layer 1
-                // $product->decrement('stock', $cartItem->quantity);
+                
+                // Kurangi stok
+                $item->product->decrement('stock', $itemQuantity);
             }
-
-            // bersihkan keranjang
-            auth()->user()->carts()->delete();
-
+            
+            // Hapus cart
+            Cart::where('user_id', $user->id)->delete();
+            
+            // ===== BYPASS UNTUK TESTING =====
+            // Buat payment proof dummy (jika bukan COD)
+            if ($request->payment_method != 'cod') {
+                PaymentProof::create([
+                    'order_id' => $order->id,
+                    'proof_image' => 'dummy/payment-proof.jpg',
+                    'payment_method' => $request->payment_method,
+                    'bank_name' => $request->payment_method == 'bank_transfer' ? 'Bank Dummy' : null,
+                    'account_number' => $request->payment_method == 'bank_transfer' ? '1234567890' : null,
+                    'notes' => 'Dummy payment proof for testing',
+                    'status' => 'pending',
+                    'verified_at' => null,
+                    'verified_by' => null,
+                ]);
+            }
+            
+            // Update status order berdasarkan payment method
+            if ($request->payment_method == 'cod') {
+                $order->update([
+                    'status' => 'pending',
+                    'payment_status' => 'pending'
+                ]);
+            } else {
+                // Untuk non-COD, biarkan waiting_payment agar CS1 bisa proses
+                $order->update([
+                    'status' => 'waiting_payment',
+                    'payment_status' => 'waiting_verification'
+                ]);
+            }
+            
             DB::commit();
-
-            return redirect()->route('payment.show', $order)
-                ->with('success', 'Pesanan berhasil dibuat! Silakan upload bukti pembayaran.');
-
+            
+            // Redirect langsung ke halaman order (bypass upload bukti)
+            return redirect()->route('orders.show', $order)
+                ->with('success', 'Pesanan berhasil dibuat! No Order: ' . $order->order_number);
+                
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            
+            \Log::error('Checkout error: ' . $e->getMessage());
+            \Log::error('Error trace: ' . $e->getTraceAsString());
+            
+            return redirect()->route('checkout')
+                ->with('error', 'Terjadi kesalahan saat memproses pesanan. Error: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -123,62 +183,25 @@ class CheckoutController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // cek jika pesanan dalam status menunggu pembayaran
-        if ($order->status !== 'waiting_payment') {
-            return redirect()->route('orders.show', $order)
-                ->with('error', 'Status pesanan tidak valid untuk pembayaran.');
-        }
-
-        return view('payment.upload', compact('order'));
+        // Untuk testing, langsung redirect ke order
+        return redirect()->route('orders.show', $order)
+            ->with('info', 'Untuk testing, langsung ke halaman order.');
     }
 
     public function uploadPayment(Request $request, Order $order)
     {
-        // cek jika pesanan milik user
-        if ($order->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        // cek jika pesanan dalam status menunggu pembayaran
-        if ($order->status !== 'waiting_payment') {
-            return redirect()->route('orders.show', $order)
-                ->with('error', 'Status pesanan tidak valid untuk pembayaran.');
-        }
-
-        $request->validate([
-            'payment_method' => 'required|in:bank_transfer,e_wallet,cod',
-            'proof_image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'bank_name' => 'required_if:payment_method,bank_transfer|string|max:100',
-            'account_number' => 'required_if:payment_method,bank_transfer|string|max:50',
-            'notes' => 'nullable|string|max:500'
-        ]);
-
-        //  simpan gambar bukti pembayaran
-        $imagePath = $request->file('proof_image')->store('payment-proofs', 'public');
-
-        // buat bukti pembayaran
-        PaymentProof::create([
-            'order_id' => $order->id,
-            'proof_image' => $imagePath,
-            'payment_method' => $request->payment_method,
-            'bank_name' => $request->bank_name,
-            'account_number' => $request->account_number,
-            'notes' => $request->notes,
-            'status' => 'pending'
-        ]);
-
-        //  perbarui status pesanan (opsional)
-        $order->update(['status' => 'waiting_payment']);
-
+        // Untuk testing, langsung redirect ke order
         return redirect()->route('orders.show', $order)
-            ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi CS Layer 1.');
+            ->with('info', 'Upload pembayaran di-skip untuk testing.');
     }
 
     public function showOrder(Order $order)
     {
         // cek jika pesanan milik user atau diakses oleh CS Layer
-        if ($order->user_id !== auth()->id() && !auth()->user()->isAdmin() && 
-            !auth()->user()->isCSLayer1() && !auth()->user()->isCSLayer2()) {
+        if ($order->user_id !== auth()->id() && 
+            !auth()->user()->isAdmin() && 
+            !auth()->user()->isCSLayer1() && 
+            !auth()->user()->isCSLayer2()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -195,20 +218,37 @@ class CheckoutController extends Controller
         }
 
         // cek jika pesanan dapat dibatalkan
-        if (!$order->canBeCancelled()) {
+        if (!in_array($order->status, ['waiting_payment', 'pending'])) {
             return redirect()->route('orders.show', $order)
                 ->with('error', 'Pesanan tidak dapat dibatalkan.');
         }
 
-        $order->update([
-            'status' => 'cancelled',
-            'cancelled_at' => now()
-        ]);
+        DB::beginTransaction();
+        try {
+            // Kembalikan stok produk
+            foreach ($order->items as $item) {
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $product->increment('stock', $item->quantity);
+                }
+            }
+            
+            $order->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'payment_status' => 'cancelled'
+            ]);
 
-        // Kembalikan stok produk
+            DB::commit();
+            
+            return redirect()->route('orders.show', $order)
+                ->with('success', 'Pesanan berhasil dibatalkan.');
 
-        return redirect()->route('orders.show', $order)
-            ->with('success', 'Pesanan berhasil dibatalkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('orders.show', $order)
+                ->with('error', 'Gagal membatalkan pesanan: ' . $e->getMessage());
+        }
     }
 
     public function listOrders()
@@ -219,10 +259,5 @@ class CheckoutController extends Controller
             ->paginate(10);
 
         return view('orders.index', compact('orders'));
-    }
-
-    private function generateOrderNumber()
-    {
-        return 'ORD' . date('Ymd') . strtoupper(Str::random(6));
     }
 }

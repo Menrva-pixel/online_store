@@ -121,6 +121,71 @@
                     </div>
                 </div>
 
+                <!-- Payment Method -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 pb-4 border-b">
+                        <i class="fas fa-credit-card mr-2"></i>Metode Pembayaran
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Bank Transfer -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" 
+                                       name="payment_method" 
+                                       value="bank_transfer"
+                                       {{ old('payment_method', 'bank_transfer') == 'bank_transfer' ? 'checked' : '' }}
+                                       required
+                                       class="h-5 w-5 text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="font-medium text-gray-700">Bank Transfer</span>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Transfer ke rekening bank kami. Instruksi akan dikirim via email.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- E-Wallet -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" 
+                                       name="payment_method" 
+                                       value="ewallet"
+                                       {{ old('payment_method') == 'ewallet' ? 'checked' : '' }}
+                                       class="h-5 w-5 text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="font-medium text-gray-700">E-Wallet</span>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Dana, OVO, GoPay, atau LinkAja
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- COD -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" 
+                                       name="payment_method" 
+                                       value="cod"
+                                       {{ old('payment_method') == 'cod' ? 'checked' : '' }}
+                                       class="h-5 w-5 text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="font-medium text-gray-700">Cash On Delivery (COD)</span>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Bayar saat barang sampai. Tambahan biaya Rp 5.000.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+
+                        @error('payment_method')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
                 <!-- Order Items -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-6 pb-4 border-b">
@@ -189,13 +254,21 @@
                                 Rp {{ number_format($tax, 0, ',', '.') }}
                             </span>
                         </div>
+
+                        <!-- Biaya COD jika dipilih -->
+                        <div id="codFee" class="flex justify-between text-red-600 hidden">
+                            <span>Biaya COD</span>
+                            <span class="font-medium">
+                                Rp 5.000
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Total -->
                     <div class="border-t border-gray-200 pt-4 mb-6">
                         <div class="flex justify-between items-center">
                             <span class="text-xl font-bold text-gray-800">Total</span>
-                            <span class="text-2xl font-bold text-blue-600">
+                            <span class="text-2xl font-bold text-blue-600" id="totalAmount">
                                 Rp {{ number_format($total, 0, ',', '.') }}
                             </span>
                         </div>
@@ -240,4 +313,41 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codRadio = document.querySelector('input[value="cod"]');
+    const codFeeElement = document.getElementById('codFee');
+    const totalAmountElement = document.getElementById('totalAmount');
+    
+    // Original total amount from server
+    const originalTotal = {{ $total }};
+    
+    function updateTotal() {
+        if (codRadio.checked) {
+            // Show COD fee and update total
+            codFeeElement.classList.remove('hidden');
+            const newTotal = originalTotal + 5000;
+            totalAmountElement.textContent = 'Rp ' + formatNumber(newTotal);
+        } else {
+            // Hide COD fee and revert to original total
+            codFeeElement.classList.add('hidden');
+            totalAmountElement.textContent = 'Rp ' + formatNumber(originalTotal);
+        }
+    }
+    
+    // Format number with dots
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    
+    // Add event listeners to all payment method radios
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', updateTotal);
+    });
+    
+    // Initial update
+    updateTotal();
+});
+</script>
 @endsection

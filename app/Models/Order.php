@@ -12,115 +12,130 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_number',
-        'total_amount',
-        'tax_amount',
-        'shipping_cost',
-        'status',
-        'shipping_address',
         'recipient_name',
         'recipient_phone',
+        'shipping_address',
+        'payment_method',
         'notes',
-        'payment_due_at'
+        'total',
+        'status',
+        'shipping_courier',
+        'tracking_number',
+        'shipping_cost',
+        'processed_by',
+        'processed_at',
+        'shipped_by',
+        'shipped_at',
+        'completed_by',
+        'completed_at',
+        'cancelled_by',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
+        'total' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
-        'payment_due_at' => 'datetime',
-        'cancelled_at' => 'datetime'
+        'processed_at' => 'datetime',
+        'shipped_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
-    // Relationships
+    /**
+     * Get the user that owns the order.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the items for the order.
+     */
     public function items()
     {
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Get the payment proof for the order.
+     */
     public function paymentProof()
     {
         return $this->hasOne(PaymentProof::class);
     }
 
-    // Scopes
-    public function scopePending($query)
+    /**
+     * Get the user who processed the order.
+     */
+    public function processor()
     {
-        return $query->where('status', 'pending');
+        return $this->belongsTo(User::class, 'processed_by');
     }
 
-    public function scopeWaitingPayment($query)
+    /**
+     * Get the user who shipped the order.
+     */
+    public function shipper()
     {
-        return $query->where('status', 'waiting_payment');
+        return $this->belongsTo(User::class, 'shipped_by');
     }
 
-    public function scopeProcessing($query)
+    /**
+     * Get the user who completed the order.
+     */
+    public function completer()
     {
-        return $query->where('status', 'processing');
+        return $this->belongsTo(User::class, 'completed_by');
     }
 
-    public function scopeShipped($query)
+    /**
+     * Get the user who cancelled the order.
+     */
+    public function canceller()
     {
-        return $query->where('status', 'shipped');
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
-    public function scopeCancelled($query)
-    {
-        return $query->where('status', 'cancelled');
-    }
-
-    // Accessors
-    public function getFormattedTotalAttribute()
-    {
-        return 'Rp ' . number_format($this->total_amount, 0, ',', '.');
-    }
-
-    public function getFormattedTaxAttribute()
-    {
-        return 'Rp ' . number_format($this->tax_amount, 0, ',', '.');
-    }
-
-    public function getFormattedShippingAttribute()
-    {
-        return 'Rp ' . number_format($this->shipping_cost, 0, ',', '.');
-    }
-
+    /**
+     * Get status label.
+     */
     public function getStatusLabelAttribute()
     {
-        $labels = [
-            'pending' => ['text' => 'Menunggu', 'color' => 'bg-yellow-100 text-yellow-800'],
-            'waiting_payment' => ['text' => 'Menunggu Pembayaran', 'color' => 'bg-blue-100 text-blue-800'],
+        $statuses = [
+            'pending' => ['text' => 'Pending', 'color' => 'bg-yellow-100 text-yellow-800'],
+            'waiting_payment' => ['text' => 'Menunggu Bayar', 'color' => 'bg-blue-100 text-blue-800'],
             'processing' => ['text' => 'Diproses', 'color' => 'bg-purple-100 text-purple-800'],
             'shipped' => ['text' => 'Dikirim', 'color' => 'bg-indigo-100 text-indigo-800'],
             'completed' => ['text' => 'Selesai', 'color' => 'bg-green-100 text-green-800'],
             'cancelled' => ['text' => 'Dibatalkan', 'color' => 'bg-red-100 text-red-800']
         ];
-
-        return $labels[$this->status] ?? ['text' => 'Unknown', 'color' => 'bg-gray-100 text-gray-800'];
+        
+        return $statuses[$this->status] ?? ['text' => 'Unknown', 'color' => 'bg-gray-100 text-gray-800'];
     }
 
-    // Methods
-    public function canBeCancelled()
+    /**
+     * Get formatted total.
+     */
+    public function getFormattedTotalAttribute()
     {
-        return in_array($this->status, ['pending', 'waiting_payment']);
+        return 'Rp ' . number_format($this->total, 0, ',', '.');
     }
 
-    public function hasPaymentProof()
+    /**
+     * Get total with shipping.
+     */
+    public function getTotalWithShippingAttribute()
     {
-        return $this->paymentProof()->exists();
+        return $this->total + ($this->shipping_cost ?? 0);
     }
 
-    public function generateOrderNumber()
+    /**
+     * Get formatted total with shipping.
+     */
+    public function getFormattedTotalWithShippingAttribute()
     {
-        return 'ORD' . date('Ymd') . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return 'Rp ' . number_format($this->total_with_shipping, 0, ',', '.');
     }
 }

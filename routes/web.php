@@ -126,7 +126,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/products/{product}', [AdminController::class, 'deleteProduct'])->name('products.delete');
         Route::get('/products/import', [AdminController::class, 'showImportForm'])->name('products.import');
         Route::post('/products/import', [AdminController::class, 'importProducts'])->name('products.import.submit');
-
+        Route::get('/products/{id}', 'ProductController@show')->name('products.show');
+        
         // User management
         Route::get('/users', [AdminController::class, 'users'])->name('users');
         Route::post('/users/{user}/role', [AdminController::class, 'updateUserRole'])->name('users.role');

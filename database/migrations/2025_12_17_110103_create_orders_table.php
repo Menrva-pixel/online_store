@@ -6,43 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
-    {
-        Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('order_number')->unique();
-            $table->decimal('total_amount', 12, 2);
-            $table->decimal('tax_amount', 12, 2)->default(0);
-            $table->decimal('shipping_cost', 12, 2)->default(0);
-            $table->enum('status', [
-                'pending', 
-                'waiting_payment', 
-                'processing', 
-                'shipped', 
-                'completed', 
-                'cancelled'
-            ])->default('pending');
-            $table->string('tracking_number')->nullable();
-            $table->string('shipping_carrier')->nullable();
-            $table->date('shipping_date')->nullable();
-            $table->date('estimated_delivery')->nullable();
-            $table->text('shipping_address');
-            $table->string('recipient_name');
-            $table->string('recipient_phone');
-            $table->text('notes')->nullable();
-            $table->timestamp('payment_due_at')->nullable();
-            $table->timestamp('processed_at')->nullable();
-            $table->timestamp('shipped_at')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('cancelled_at')->nullable();
-            $table->timestamps();
-            
-            $table->index('order_number');
-            $table->index('status');
-            $table->index('payment_due_at');
-        });
-    }
+ public function up()
+{
+    Schema::create('order_items', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('order_id')->constrained()->onDelete('cascade');
+        $table->foreignId('product_id')->constrained()->onDelete('cascade');
+        $table->integer('quantity');
+        $table->decimal('price', 12, 2);
+        $table->decimal('subtotal', 10, 2)->nullable()->change();
+        $table->timestamps();
+        
+        $table->index('order_id');
+        $table->index('product_id');
+    });
+}
 
     public function down()
     {
