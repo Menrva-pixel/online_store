@@ -63,6 +63,7 @@
                         <h2 class="text-xl font-bold text-gray-800 mb-2">Status Pesanan</h2>
                         @php
                             $statusColors = [
+                                'pending' => 'bg-gray-100 text-gray-800',
                                 'waiting_payment' => 'bg-yellow-100 text-yellow-800',
                                 'processing' => 'bg-purple-100 text-purple-800',
                                 'shipped' => 'bg-indigo-100 text-indigo-800',
@@ -70,6 +71,7 @@
                                 'cancelled' => 'bg-red-100 text-red-800'
                             ];
                             $statusLabels = [
+                                'pending' => 'Menunggu',
                                 'waiting_payment' => 'Menunggu Pembayaran',
                                 'processing' => 'Diproses',
                                 'shipped' => 'Dikirim',
@@ -77,8 +79,8 @@
                                 'cancelled' => 'Dibatalkan'
                             ];
                         @endphp
-                        <span class="px-3 py-1 text-sm rounded-full {{ $statusColors[$order->status] }}">
-                            {{ $statusLabels[$order->status] }}
+                        <span class="px-3 py-1 text-sm rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
+                            {{ $statusLabels[$order->status] ?? $order->status }}
                         </span>
                     </div>
                     
@@ -280,7 +282,7 @@
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Informasi Pembayaran</h2>
                 <div class="space-y-4">
-                    @if($order->paymentProof)
+                    @if($order->paymentProof && $order->paymentProof->verified_at)
                         <div>
                             <div class="text-sm text-gray-600">Status Pembayaran</div>
                             <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
@@ -362,7 +364,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Status</span>
-                        <span class="font-medium">{{ $statusLabels[$order->status] }}</span>
+                        <span class="font-medium">{{ $statusLabels[$order->status] ?? $order->status }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Total Item</span>

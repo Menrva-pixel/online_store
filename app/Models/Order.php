@@ -18,6 +18,8 @@ class Order extends Model
         'payment_method',
         'notes',
         'total',
+        'subtotal',
+        'tax',
         'status',
         'shipping_courier',
         'tracking_number',

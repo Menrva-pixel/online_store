@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/orders/{order}/ship', [CSLayer2Controller::class, 'shipOrder'])->name('orders.ship');
         Route::post('/orders/{order}/complete', [CSLayer2Controller::class, 'completeOrder'])->name('orders.complete');
         Route::post('/orders/{order}/cancel', [CSLayer2Controller::class, 'cancelOrder'])->name('orders.cancel');
-        
+        Route::get('/check-columns', [CSLayer2Controller::class, 'checkOrdersColumns']);        
         // Printing
         Route::get('/orders/{order}/print', [CSLayer2Controller::class, 'printPackingSlip'])->name('orders.print');
         Route::get('/orders/{order}/labels', [CSLayer2Controller::class, 'downloadShippingLabels'])->name('orders.labels');

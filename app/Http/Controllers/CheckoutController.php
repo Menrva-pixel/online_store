@@ -69,7 +69,7 @@ class CheckoutController extends Controller
                     ->with('error', 'Keranjang belanja kosong.');
             }
             
-            // Hitung total dengan benar sesuai dengan di showCheckout()
+            // Hitung subtotal
             $subtotal = 0;
             foreach ($cartItems as $item) {
                 // Cek stok
@@ -90,8 +90,8 @@ class CheckoutController extends Controller
                 $total += 5000; 
             }
             
-            // PERBAIKAN: Sesuaikan dengan field di model Order
-            $order = Order::create([
+            // **PERBAIKAN UTAMA: ISI SEMUA KOLOM YANG REQUIRED**
+            $orderData = [
                 'user_id' => $user->id,
                 'order_number' => 'ORD-' . time() . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
                 'recipient_name' => $request->recipient_name,
@@ -99,12 +99,22 @@ class CheckoutController extends Controller
                 'shipping_address' => $request->shipping_address,
                 'payment_method' => $request->payment_method,
                 'notes' => $request->notes ?? '',
-                'total' => $total, // Hanya total, subtotal/tax/shipping disimpan di field lain jika ada
+                
+                // **KOLOM-KOLOM INI WAJIB ADA:**
+                'subtotal' => $subtotal,
+                'tax' => $tax,
                 'shipping_cost' => $shipping,
+                'total' => $total,
+                
                 'status' => ($request->payment_method == 'cod') ? 'pending' : 'waiting_payment',
-            ]);
+            ];
             
-            // Buat order items dengan SEMUA field yang required
+            // Debug: lihat data sebelum insert
+            \Log::info('Order data to insert:', $orderData);
+            
+            $order = Order::create($orderData);
+            
+            // Buat order items
             foreach ($cartItems as $item) {
                 $itemPrice = $item->product->price;
                 $itemQuantity = $item->quantity;
