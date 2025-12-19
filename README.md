@@ -6,16 +6,6 @@
 
 Aplikasi e-commerce dengan sistem multi-role (Customer, Admin, CS1, CS2) dan workflow terstruktur untuk verifikasi pembayaran manual.
 
-## Daftar Isi
-- [Fitur Utama](#-fitur-utama)
-- [Instalasi](#-instalasi-cepat)
-- [Akun Default](#-akun-default)
-- [Workflow Sistem](#-workflow-sistem)
-- [Struktur Database](#-struktur-database)
-- [API Endpoints](#-api-endpoints)
-- [Deployment](#-deployment)
-- [Troubleshooting](#-troubleshooting)
-
 ## Fitur Utama
 
 ### **Customer**
@@ -91,5 +81,96 @@ DB_PASSWORD=password
 
 APP_URL=http://localhost:8000
 ```
+
+### Deployment
+
+## 1.Setup Server (Ubuntu)
+### Update & install dependencies
+```
+sudo apt update
+sudo apt install php8.1 php8.1-fpm php8.1-pgsql php8.1-mbstring php8.1-xml
+sudo apt install postgresql postgresql-contrib nginx
+sudo apt install git curl composer nodejs npm
+```
+## 2. Clone & Setup Project
+```
+cd /var/www
+sudo git clone [repository-url] toko-online
+cd toko-online
+
+sudo composer install --no-dev --optimize-autoloader
+sudo npm install --production
+sudo npm run build
+
+sudo cp .env.example .env
+sudo nano .env  # Edit konfigurasi database
+```
+## 3.Konfigurasi Nginx
+```
+sudo nano /etc/nginx/sites-available/toko-online
+```
+isi dengan :
+```
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /var/www/toko-online/public;
+
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+lalu ketik perintah :
+```
+sudo ln -s /etc/nginx/sites-available/toko-online /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+## 4. Setup Database PostgreSQL
+```
+sudo -u postgres psql
+CREATE DATABASE toko_online;
+CREATE USER laravel_user WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE toko_online TO laravel_user;
+\q
+```
+## 5.Setup Permission & Scheduler
+```
+sudo chown -R www-data:www-data /var/www/toko-online
+sudo chmod -R 755 /var/www/toko-online
+sudo chmod -R 775 /var/www/toko-online/storage
+
+# Setup crontab untuk scheduler
+sudo crontab -u www-data -e
+```
+Tambahkan :
+```
+* * * * * cd /var/www/toko-online && php artisan schedule:run >> /dev/null 2>&1
+```
+## 6. Optimisasi Produksi
+```
+cd /var/www/toko-online
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+## 7. SSL (Opsional)
+```
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
 
 
