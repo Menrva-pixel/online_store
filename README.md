@@ -1,48 +1,100 @@
-# 🛍️ Toko Online Sederhana - Laravel & PostgreSQL
+#  Simple Online Store Multi Management System
+**Laravel 12 · PostgreSQL · Multi-Role Workflow**
 
 ![Laravel](https://img.shields.io/badge/Laravel-10.x-FF2D20?style=for-the-badge&logo=laravel)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql)
 ![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?style=for-the-badge&logo=php)
 
-Aplikasi e-commerce dengan sistem multi-role (Customer, Admin, CS1, CS2) dan workflow terstruktur untuk verifikasi pembayaran manual.
+A **simple yet structured e-commerce application** built using **Laravel** and **PostgreSQL**, featuring **multi-role access control** and a **manual payment verification workflow** designed for small to medium-scale online stores.
 
-## Fitur Utama
+---
 
-### **Customer**
-- ✅ Browse & search produk
-- ✅ Keranjang belanja
-- ✅ Checkout dengan 3 metode bayar
-- ✅ Upload bukti pembayaran
-- ✅ Track order status
-- ✅ Batalkan order
+##  Key Features
+- Clean Laravel 10 architecture
+- Role-Based Access Control (RBAC)
+- Manual payment verification (2-layer CS)
+- PostgreSQL optimized database schema
+- Excel import/export support
+- Production-ready deployment setup
 
-### **Admin**
-- ✅ CRUD produk lengkap
-- ✅ Import produk massal via Excel
-- ✅ Download template Excel
-- ✅ Manajemen user & role
-- ✅ Monitoring semua order
+---
 
-### **CS Layer 1**
-- ✅ Verifikasi bukti pembayaran
-- ✅ Approve/Reject payment
-- ✅ Konfirmasi ke customer
-- ✅ Dashboard pending payments
+##  User Roles & Capabilities
 
-### **CS Layer 2**
-- ✅ Proses order
-- ✅ Input tracking number
-- ✅ Generate packing slip
-- ✅ Update status pengiriman
-- ✅ Complete order
+###  Customer
+- Browse & search products
+- Manage shopping cart
+- Checkout with multiple payment methods
+- Upload payment proof
+- Track order status
+- Cancel order (before processing)
 
-## Instalasi Cepat
+###  Admin
+- Full product CRUD
+- Bulk product import via Excel
+- Download Excel templates
+- User & role management
+- Monitor all orders
 
-### Prasyarat
-- PHP 8.1+
+###  Customer Service – Layer 1
+- Verify payment proofs
+- Approve / reject payments
+- Notify customers
+- View pending payment dashboard
+
+###  Customer Service – Layer 2
+- Process approved orders
+- Input tracking numbers
+- Generate packing slips
+- Update shipping status
+- Complete orders
+
+---
+
+##  Tech Stack
+
+| Layer | Technology |
+|------|-----------|
+| Backend | Laravel 12 |
+| Frontend | Blade + TailwindCSS |
+| Database | PostgreSQL |
+| Authentication | Laravel Auth |
+| File Storage | Laravel Storage |
+| Import/Export | phpoffice/phpspreadsheet |
+
+---
+
+##  Quick Installation
+
+### Prerequisites
+- PHP ≥ 8.1
 - Composer
-- PostgreSQL 12+
-- Node.js 16+
+- PostgreSQL ≥ 12
+- Node.js ≥ 16
+
+### Installation Steps
+```bash
+# Clone repository
+git clone https://github.com/Menrva-pixel/online_store.git
+cd online-store
+
+# Install backend & frontend dependencies
+composer install
+npm install
+npm run build
+
+# Setup environment
+cp .env.example .env
+
+# Generate key & migrate database
+php artisan key:generate
+php artisan migrate --seed
+
+# Storage symlink
+php artisan storage:link
+
+# Run development server
+php artisan serve
 
 ### Langkah Instalasi
 
