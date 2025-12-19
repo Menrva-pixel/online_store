@@ -99,15 +99,21 @@ class CSLayer1Controller extends Controller
         return view('cs1.orders.pending', compact('orders'));
     }
 
-    public function verifiedPayments()
-    {
-        $payments = PaymentProof::where('status', 'verified')
-            ->with(['order.user', 'verifier'])
-            ->latest()
-            ->paginate(20);
+public function verifiedPayments()
+{
+    $payments = PaymentProof::where('status', 'verified')
+        ->whereNotNull('verified_at')
+        ->with(['order.user', 'verifier'])
+        ->latest()
+        ->paginate(20);
 
-        return view('cs1.payments.verified', compact('payments'));
+    // Tambahkan relasi verifier jika ada
+    if (method_exists(PaymentProof::class, 'verifier')) {
+        $payments->load('verifier');
     }
+
+    return view('cs1.payments.verified', compact('payments'));
+}
 
     public function downloadProof(PaymentProof $paymentProof)
     {

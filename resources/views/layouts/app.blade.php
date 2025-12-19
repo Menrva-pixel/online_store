@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Toko Online')</title>
     
-    <!-- Tailwind CSS via CDN -->
+    <!-- CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script src="//unpkg.com/alpinejs" defer></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -95,6 +95,27 @@
                 });
             }
         });
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'B') {
+                console.clear();
+                console.log('%c' + `
+        ██████╗  █████╗ ██████╗ ██╗  ██╗ █████╗ ██╗  ██╗
+        ██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝██╔══██╗██║  ██║
+        ██████╔╝███████║██████╔╝█████╔╝ ███████║███████║
+        ██╔══██╗██╔══██║██╔══██╗██╔═██╗ ██╔══██║██╔══██║
+        ██████╔╝██║  ██║██║  ██║██║  ██╗██║  ██║██║  ██║
+        ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
+                `, 'color: #FF9800; font-family: monospace; font-size: 10px;');
+                
+                console.log('%c Developer: barkah herdyanto sejati', 
+                    'color: #4CAF50; font-size: 18px; font-weight: bold;');
+            }
+});
+
+// Always show minimal credit
+console.log('%c👨‍💻 barkah herdyanto sejati', 
+    'color: #607D8B; font-size: 11px;');
+
     </script>
 </body>
 </html>

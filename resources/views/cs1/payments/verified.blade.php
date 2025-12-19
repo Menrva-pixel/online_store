@@ -151,7 +151,7 @@
                                         {{ $payment->verifier->name ?? 'System' }}
                                     </div>
                                     <div class="text-sm text-gray-600">
-                                        {{ $payment->verified_at->format('d M Y H:i') }}
+                                        {{ $payment->verified_at ? $payment->verified_at->format('d M Y H:i') : 'Belum diverifikasi' }}
                                     </div>
                                     @if($payment->verification_notes)
                                         <div class="text-xs text-gray-500 mt-1">
@@ -236,7 +236,8 @@
                     <span class="font-bold text-gray-900">
                         @php
                             $avgTime = \App\Models\PaymentProof::where('status', 'verified')
-                                ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, created_at, verified_at)) as avg_minutes')
+                                ->whereNotNull('verified_at')
+                                ->selectRaw("AVG(EXTRACT(EPOCH FROM (verified_at - created_at)) / 60) as avg_minutes")
                                 ->first()->avg_minutes ?? 0;
                         @endphp
                         {{ round($avgTime) }} menit
