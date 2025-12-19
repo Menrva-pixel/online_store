@@ -50,7 +50,7 @@
 
     <!-- Filters and Search -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <form action="{{ route('admin.orders') }}" method="GET" class="space-y-4">
+        <form action="{{ route('admin.orders.index') }}" method="GET" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Search -->
                 <div>
@@ -108,7 +108,7 @@
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
                     <i class="fas fa-filter mr-2"></i>Terapkan Filter
                 </button>
-                <a href="{{ route('admin.orders') }}" 
+                <a href="{{ route('admin.orders.index') }}" 
                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
                     <i class="fas fa-redo mr-2"></i>Reset Filter
                 </a>
@@ -217,7 +217,7 @@
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if($order->status == 'pending' || $order->status == 'waiting_payment')
-                                            <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="inline">
+                                            <form action="{{ route('admin.orders.status.update', $order) }}" method="POST" class="inline">
                                                 @csrf
                                                 <button type="submit" 
                                                         name="status" 
