@@ -10,7 +10,7 @@ A **simple yet structured e-commerce application** built using **Laravel** and *
 ---
 
 ##  Key Features
-- Clean Laravel 10 architecture
+- Clean Laravel 10+ architecture
 - Role-Based Access Control (RBAC)
 - Manual payment verification (2-layer CS)
 - PostgreSQL optimized database schema
@@ -56,7 +56,7 @@ A **simple yet structured e-commerce application** built using **Laravel** and *
 | Layer | Technology |
 |------|-----------|
 | Backend | Laravel 12 |
-| Frontend | Blade + TailwindCSS |
+| Frontend | Blade + TailwindCSS +alpineJs |
 | Database | PostgreSQL |
 | Authentication | Laravel Auth |
 | File Storage | Laravel Storage |
