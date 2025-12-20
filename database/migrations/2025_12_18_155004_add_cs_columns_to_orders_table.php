@@ -25,6 +25,10 @@ class AddCsColumnsToOrdersTable extends Migration
             $table->foreignId('cancelled_by')->nullable()->constrained('users');
             $table->timestamp('cancelled_at')->nullable();
             $table->text('cancellation_reason')->nullable();
+            
+            // Kolom untuk payment expiry
+            $table->timestamp('payment_expiry_at')->nullable()->after('status');
+            $table->timestamp('auto_cancelled_at')->nullable()->after('cancelled_at');
         });
     }
 
@@ -41,6 +45,7 @@ class AddCsColumnsToOrdersTable extends Migration
                 'shipped_by', 'shipped_at',
                 'completed_by', 'completed_at',
                 'cancelled_by', 'cancelled_at', 'cancellation_reason',
+                'payment_expiry_at', 'auto_cancelled_at' 
             ]);
         });
     }
