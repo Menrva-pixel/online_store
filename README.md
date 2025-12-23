@@ -95,20 +95,19 @@ php artisan storage:link
 
 # Run development server
 php artisan serve
-
-### Langkah Instalasi
+```
 
 ## .ENV CONFIG ( SESUAIKAN DENGAN KONFIGURASI LOKAL / DB ANDA SENDIRI)
-```
+
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=toko_online
 DB_USERNAME=postgres
-DB_PASSWORD=password
+DB_PASSWORD=password (password db anda)
 
 APP_URL=http://localhost:8000
-```
+
 
 ### Deployment
 
