@@ -98,31 +98,7 @@ php artisan serve
 
 ### Langkah Instalasi
 
-```bash
-# 1. Clone repository
-git clone [online_store](https://github.com/Menrva-pixel/online_store)
-cd online-store
-
-# 2. Install dependencies
-composer install
-npm install
-npm run build
-
-# 3. Setup environment
-cp .env.example .env
-# Edit .env file dengan konfigurasi database
-
-# 4. Generate key & migrasi
-php artisan key:generate
-php artisan migrate --seed
-
-# 5. Setup storage
-php artisan storage:link
-
-# 6. Jalankan server
-php artisan serve
-```
-## .ENV CONFIG
+## .ENV CONFIG ( SESUAIKAN DENGAN KONFIGURASI LOKAL / DB ANDA SENDIRI)
 ```
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
