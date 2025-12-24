@@ -5,7 +5,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql)
 ![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?style=for-the-badge&logo=php)
 
-A **simple yet structured e-commerce application** built using **Laravel** and **PostgreSQL**, featuring **multi-role access control** and a **manual payment verification workflow** designed for small to medium-scale online stores.
+Template e-commerce sederhana dan terstruktur dengan dukungan multi-role serta alur verifikasi pembayaran manual, cocok untuk toko online skala kecil hingga menengah.
+Gratis digunakan.
 
 ---
 
