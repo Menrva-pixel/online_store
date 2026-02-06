@@ -127,10 +127,10 @@ Untuk production, gunakan:
 
 ---
 
-**SEO GitHub Keywords**
+
 Laravel e-commerce, Laravel 12, online store, PostgreSQL, RBAC, payment verification, manual payment, UMKM, multi-role, checkout system, inventory management, order management, customer service workflow.
 
 ---
 
 **Lisensi**
-Silakan tambahkan informasi lisensi sesuai kebutuhan Anda.
+MIT
