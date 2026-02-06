@@ -1,174 +1,79 @@
-# Simple Online Store — Multi Management System
+﻿# Simple Online Store - Multi Management System
 
 Laravel 12 · PostgreSQL · E-commerce · RBAC · Manual Payment Verification
 
-Repository ini adalah template e-commerce terstruktur untuk usaha kecil-menengah yang membutuhkan alur multi-role (Customer, Admin, Customer Service), verifikasi pembayaran manual dua-lapisan, dan optimasi untuk PostgreSQL.
+Simple Online Store adalah template aplikasi e-commerce berbasis Laravel 12 yang dirancang untuk usaha kecil-menengah. Aplikasi ini menyediakan katalog produk, keranjang belanja, checkout, upload bukti pembayaran, serta alur verifikasi dua-lapis oleh Customer Service. Cocok untuk toko online yang membutuhkan proses pembayaran manual yang rapi dan aman.
 
-Klik ⭐ jika Anda menyukai project ini
-
----
-
-## Ringkasan singkat 
-
-Simple Online Store adalah boilerplate e-commerce berbasis Laravel 12 yang siap produksi: katalog produk, keranjang, checkout dengan upload bukti pembayaran, manajemen pesanan, dan alur verifikasi pembayaran dua-level. Cocok untuk merchant yang ingin cepat deploy toko online dengan alur verifikasi manual.
-
-Keywords: Laravel 12, online store, e-commerce, PostgreSQL, RBAC, pembayaran manual, verifikasi pembayaran, Laravel starter.
+Klik bintang jika project ini membantu Anda.
 
 ---
 
-## Fitur Utama
-
-- Arsitektur Laravel yang rapi dan modular
-- Role-Based Access Control (Customer, Admin, CS layer 1, CS layer 2)
-- Alur checkout + upload bukti pembayaran (manual approval)
-- Manajemen produk: CRUD, import dari Excel
-- Optimasi PostgreSQL untuk performa dan indexing
-- Penanganan order, pengiriman, dan pelacakan status pesanan
-- Storage terhubung (disk publik) dan helper untuk download/upload
+**Ringkasan Cepat**
+- Jenis aplikasi: E-commerce (toko online)
+- Fokus utama: verifikasi pembayaran manual, multi-role management
+- Target pengguna: UMKM, developer pemula, startup kecil
 
 ---
 
-## Alur dan Arsitektur
-
-```mermaid
-flowchart TD
-    subgraph Client
-        A["User Browser / Mobile"]
-    end
-
-    subgraph WebApp[Laravel App]
-        B["Routes"] --> C["Controllers"]
-        C --> D["Services / Jobs"]
-        C --> E["Views (Blade + Tailwind)"]
-        D --> F[("PostgreSQL DB")]
-        D --> G["Storage / Filesystem"]
-    end
-
-    A -->|HTTP/HTTPS| B
-    F ---|sessions| H[("sessions table")]
-
-    classDef db fill:#f9f,stroke:#333,stroke-width:1px
-    class F,H db
-```
- 
----
-
-## Diagram: Cara kerja toko (business flow)
-
-Berikut beberapa diagram yang menjelaskan proses bisnis toko — fokus pada alur order, verifikasi pembayaran, struktur data utama, dan contoh statistik operasional. Diagram ini membantu developer dan pemilik bisnis memahami bagaimana request pengguna mengalir sampai pesanan diproses.
-
-### 1) Order lifecycle (flowchart)
-
-```mermaid
-flowchart LR
-  Browse["Browse & Search Produk"] --> AddCart["Tambah ke Keranjang"]
-  AddCart --> Checkout["Checkout & Pilih Metode Pembayaran"]
-  Checkout --> UploadProof["Upload Bukti Pembayaran"]
-  UploadProof --> OrderPending["Order: Pending / Menunggu Verifikasi"]
-
-  OrderPending --> CS1Review["CS Layer 1: Verifikasi Bukti"]
-  CS1Review -->|Approve| CS2Process["CS Layer 2: Proses Pengiriman"]
-  CS1Review -->|Reject| Rejected["Pembayaran Ditolak / Minta Ulang Bukti"]
-
-  CS2Process --> Shipped["Dikirim (Resi input)"]
-  Shipped --> Delivered["Terkirim / Selesai"]
-
-  Rejected --> NotifyCustomer["Notifikasi ke Customer (minta bukti ulang)"]
-  NotifyCustomer --> UploadProof
-
-  classDef userAction fill:#e3f2fd,stroke:#333,stroke-width:1px
-  class Browse,AddCart,Checkout,UploadProof userAction
-```
-
-Keterangan singkat:
-- Setelah upload bukti, order berada pada status pending sampai CS layer 1 memverifikasi.
-- Jika terverifikasi, proses pengiriman dilakukan oleh CS layer 2; jika ditolak, customer diminta meng-upload ulang bukti.
-
-### 2) Verifikasi pembayaran (sequence diagram)
-
-```mermaid
-sequenceDiagram
-    participant C as Customer
-    participant F as Frontend
-    participant S as Server (Laravel)
-    participant DB as Database
-    participant CS as CS (layer1)
-
-    C->>F: Upload bukti pembayaran
-    F->>S: POST /checkout/payment-proof
-    S->>DB: simpan PaymentProof (order_id, file, metadata)
-    Note right of S: Order status -> "awaiting_verification"
-    CS->>S: Ambil daftar proof untuk review
-    CS->>S: Update status (approve/reject)
-    S->>C: Kirim notifikasi hasil verifikasi
-```
-
-Penjelasan:
-- Sequence menunjukkan langkah teknis bisnis (apa yang dilakukan pengguna dan CS) tanpa membahas detail framework.
-
-### 3) Struktur data utama (ER diagram, ringkas)
-
-```mermaid
-erDiagram
-    USERS ||--o{ ORDERS : places
-    ORDERS ||--|{ ORDER_ITEMS : contains
-    PRODUCTS ||--o{ ORDER_ITEMS : "included_in"
-    USERS ||--o{ PAYMENT_PROOFS : submits
-    ORDERS ||--o{ PAYMENT_PROOFS : "has"
-    USERS ||--o{ CARTS : owns
-    CARTS ||--o{ CART_ITEMS : contains
-```
-
-Catatan: ER diagram di atas adalah ringkasan; cek folder `database/migrations` untuk skema kolom lengkap.
-
-### 4) Contoh statistik operasional (pie chart)
-
-```mermaid
-pie title Distribusi status pesanan (contoh)
-    "Pending / Awaiting Verification" : 25
-    "Awaiting CS2 / Processing" : 15
-    "Approved" : 40
-    "Shipped" : 15
-    "Delivered" : 5
-```
-
-Penjelasan:
-- Statistik di atas hanyalah contoh ilustratif. Untuk statistik nyata, hubungkan aplikasi dengan analytics (database query, Prometheus, atau BI tools) dan tampilkan angka aktual.
+**Fitur Utama**
+- Katalog produk dan detail produk
+- Keranjang belanja dan checkout
+- Upload bukti pembayaran dan verifikasi dua-lapis
+- Manajemen order dan status pengiriman
+- Role-Based Access Control: Admin, CS Layer 1, CS Layer 2, Customer
+- Optimasi untuk PostgreSQL
+- Penyimpanan file terhubung (storage public)
 
 ---
 
-Jika Anda ingin, saya bisa:
-- Mengganti angka pada pie chart dengan nilai nyata dari database (saya bisa tuliskan query contoh untuk PostgreSQL).
-- Menambahkan diagram swimlane untuk memperlihatkan tanggung jawab (Customer / CS1 / CS2 / Admin).
-- Menghasilkan PNG/SVG dari mermaid diagram dan menaruhnya di repo (`docs/` atau `assets/`) agar tampil langsung di GitHub (mermaid di README kadang perlu plugin atau pihak ketiga untuk render secara visual di preview).
+**Peran Pengguna**
+- Customer: belanja, checkout, upload bukti pembayaran
+- CS Layer 1: verifikasi bukti pembayaran
+- CS Layer 2: proses pengiriman dan update status
+- Admin: kelola produk, pengguna, dan order
 
+---
 
+**Teknologi**
+- Laravel 12
+- PostgreSQL
+- Blade + Tailwind CSS
+- Alpine.js
 
-## Instalasi & Setup (Windows - PowerShell)
+---
 
-Prasyarat:
+**Persyaratan**
 - PHP >= 8.1
 - Composer
+- Node.js >= 16
 - PostgreSQL
-- Node >= 16
 
-Langkah singkat (dijalankan di root project yang berisi file `artisan`):
+---
+
+**Instalasi Cepat (Windows - PowerShell)**
+Jalankan perintah di root project (folder yang berisi file `artisan`).
 
 ```powershell
-# Install PHP dependencies
+# Install dependency PHP
 composer install
 
-# Install JS dependencies dan build assets
+# Install dependency JS dan build assets
 npm install
 npm run build
 
-# Salin environment dan buat app key
+# Salin file environment dan generate app key
 copy .env.example .env
 php artisan key:generate
 
-# Sesuaikan .env untuk koneksi database PostgreSQL (DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD)
+# Atur koneksi database PostgreSQL di .env
+# DB_CONNECTION=pgsql
+# DB_HOST=127.0.0.1
+# DB_PORT=5432
+# DB_DATABASE=nama_database
+# DB_USERNAME=username
+# DB_PASSWORD=password
 
-# Jalankan migration (termasuk tabel sessions jika SESSION_DRIVER=database)
+# Jalankan migrasi
 php artisan migrate
 
 # (Opsional) Seed data
@@ -177,6 +82,55 @@ php artisan db:seed
 # Link storage
 php artisan storage:link
 
-# Jalankan server pengembangan
+# Jalankan server lokal
 php artisan serve
 ```
+
+---
+
+**Konfigurasi .env (Minimum)**
+Pastikan nilai berikut di file `.env` sudah benar:
+- `APP_URL`
+- `DB_CONNECTION=pgsql`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_DATABASE`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+
+---
+
+**Akun Demo (Jika Seed Data Aktif)**
+Jika Anda menjalankan `php artisan db:seed`, Anda bisa memakai akun demo.
+- Admin: `admin@example.com`
+- CS Layer 1: `cs1@example.com`
+- CS Layer 2: `cs2@example.com`
+- Customer: `customer@example.com`
+- Password semua akun: `password123`
+
+---
+
+**Struktur Folder Penting**
+- `app/` logic utama aplikasi
+- `resources/views/` tampilan Blade
+- `routes/` definisi routing
+- `database/migrations/` skema database
+- `storage/` file upload dan cache
+
+---
+
+**Catatan Deploy**
+Untuk production, gunakan:
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- Jalankan `php artisan config:cache` dan `php artisan route:cache`
+
+---
+
+**SEO GitHub Keywords**
+Laravel e-commerce, Laravel 12, online store, PostgreSQL, RBAC, payment verification, manual payment, UMKM, multi-role, checkout system, inventory management, order management, customer service workflow.
+
+---
+
+**Lisensi**
+Silakan tambahkan informasi lisensi sesuai kebutuhan Anda.
