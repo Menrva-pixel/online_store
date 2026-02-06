@@ -10,6 +10,11 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom Styles -->
     @stack('styles')
@@ -25,20 +30,28 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <!-- Navbar -->
-    @include('partials.navbar')
-    
-    <!-- Flash Messages -->
-    @include('partials.flash-messages')
-    
-    <!-- Main Content -->
-    <main class="flex-grow">
-        @yield('content')
-    </main>
-    
-    <!-- Footer -->
-    @include('partials.footer')
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased" style="font-family: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;">
+    <div class="relative isolate flex min-h-screen flex-col">
+        <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div class="absolute -top-40 right-0 h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl"></div>
+            <div class="absolute top-32 left-0 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl"></div>
+            <div class="absolute bottom-0 right-20 h-80 w-80 rounded-full bg-cyan-200/40 blur-3xl"></div>
+        </div>
+
+        <!-- Navbar -->
+        @include('partials.navbar')
+        
+        <!-- Flash Messages -->
+        @include('partials.flash-messages')
+        
+        <!-- Main Content -->
+        <main class="flex-grow">
+            @yield('content')
+        </main>
+        
+        <!-- Footer -->
+        @include('partials.footer')
+    </div>
     
     <!-- Scripts -->
     @stack('scripts')

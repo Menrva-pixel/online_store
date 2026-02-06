@@ -3,13 +3,13 @@
 @section('title', 'Register - Toko Online')
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-amber-50 to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
         <div>
             <!-- Logo & Brand -->
             <div class="text-center">
                 <a href="{{ route('home') }}" class="inline-flex items-center">
-                    <div class="bg-green-600 p-3 rounded-lg">
+                    <div class="bg-emerald-600 p-3 rounded-lg">
                         <i class="fas fa-store text-white text-3xl"></i>
                     </div>
                     <span class="ml-3 text-3xl font-bold text-gray-900">Toko Online</span>
@@ -19,7 +19,7 @@
                 </h2>
                 <p class="mt-2 text-center text-sm text-gray-600">
                     Sudah punya akun? 
-                    <a href="{{ route('login') }}" class="font-medium text-blue-600 hover:text-blue-500">
+                    <a href="{{ route('login') }}" class="font-medium text-emerald-600 hover:text-emerald-500">
                         Masuk di sini
                     </a>
                 </p>
@@ -56,7 +56,7 @@
                                autocomplete="name" 
                                required 
                                value="{{ old('name') }}"
-                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                                placeholder="John Doe">
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                                autocomplete="email" 
                                required 
                                value="{{ old('email') }}"
-                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                                placeholder="email@example.com">
                     </div>
                 </div>
@@ -95,7 +95,7 @@
                                type="password" 
                                autocomplete="new-password" 
                                required
-                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                                placeholder="********">
                         <button type="button" 
                                 onclick="togglePasswordVisibility('password')" 
@@ -122,7 +122,7 @@
                                type="password" 
                                autocomplete="new-password" 
                                required
-                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               class="pl-10 appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                                placeholder="********">
                         <button type="button" 
                                 onclick="togglePasswordVisibility('password_confirmation')" 
@@ -138,12 +138,12 @@
                            name="terms" 
                            type="checkbox" 
                            required
-                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                           class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded">
                     <label for="terms" class="ml-2 block text-sm text-gray-900">
                         Saya setuju dengan 
-                        <a href="#" class="text-blue-600 hover:text-blue-500">Syarat & Ketentuan</a>
+                        <a href="#" class="text-emerald-600 hover:text-emerald-500">Syarat & Ketentuan</a>
                         dan 
-                        <a href="#" class="text-blue-600 hover:text-blue-500">Kebijakan Privasi</a>
+                        <a href="#" class="text-emerald-600 hover:text-emerald-500">Kebijakan Privasi</a>
                     </label>
                 </div>
             </div>
@@ -151,9 +151,9 @@
             <!-- Submit Button -->
             <div>
                 <button type="submit" 
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300">
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-300">
                     <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <i class="fas fa-user-plus text-green-500 group-hover:text-green-400"></i>
+                        <i class="fas fa-user-plus text-emerald-500 group-hover:text-emerald-400"></i>
                     </span>
                     Daftar Sekarang
                 </button>
@@ -168,8 +168,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="bg-blue-100 p-2 rounded-lg">
-                            <i class="fas fa-shopping-cart text-blue-600"></i>
+                        <div class="bg-emerald-100 p-2 rounded-lg">
+                            <i class="fas fa-shopping-cart text-emerald-600"></i>
                         </div>
                     </div>
                     <div class="ml-3">
@@ -179,8 +179,8 @@
                 </div>
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="bg-green-100 p-2 rounded-lg">
-                            <i class="fas fa-shield-alt text-green-600"></i>
+                        <div class="bg-emerald-100 p-2 rounded-lg">
+                            <i class="fas fa-shield-alt text-emerald-600"></i>
                         </div>
                     </div>
                     <div class="ml-3">
@@ -190,8 +190,8 @@
                 </div>
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="bg-purple-100 p-2 rounded-lg">
-                            <i class="fas fa-truck text-purple-600"></i>
+                        <div class="bg-amber-100 p-2 rounded-lg">
+                            <i class="fas fa-truck text-amber-600"></i>
                         </div>
                     </div>
                     <div class="ml-3">
@@ -201,8 +201,8 @@
                 </div>
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
-                        <div class="bg-yellow-100 p-2 rounded-lg">
-                            <i class="fas fa-headset text-yellow-600"></i>
+                        <div class="bg-cyan-100 p-2 rounded-lg">
+                            <i class="fas fa-headset text-cyan-600"></i>
                         </div>
                     </div>
                     <div class="ml-3">
@@ -215,7 +215,7 @@
 
         <!-- Back to Home -->
         <div class="text-center mt-6">
-            <a href="{{ route('home') }}" class="text-sm text-gray-600 hover:text-blue-600">
+            <a href="{{ route('home') }}" class="text-sm text-gray-600 hover:text-emerald-600">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali ke Halaman Utama
             </a>
         </div>
